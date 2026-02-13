@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+from mapa_calor import criar_mapa_calor, criar_tabela_bairros
 
 try:
     import statsmodels.api as sm
@@ -300,260 +301,301 @@ filtered = df[
 ].copy()
 
 # ============================================================
-# KPIs
+# CRIAR ABAS
 # ============================================================
-col1, col2, col3, col4, col5 = st.columns(5)
+tab1, tab2 = st.tabs(['📊 Dashboard', '🗺️ Mapa de Calor'])
 
-with col1:
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-label">Imóveis</div>
-        <div class="kpi-value">{len(filtered):,}</div>
-        <div class="kpi-sublabel">{'registros totais' if show_all else 'únicos'}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    avg_price = filtered['Preço'].mean() if not filtered.empty else 0
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-label">Preço Médio</div>
-        <div class="kpi-value">{format_brl(avg_price)}</div>
-        <div class="kpi-sublabel">mediana: {format_brl(filtered['Preço'].median()) if not filtered.empty else 'N/A'}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    avg_pm2 = filtered['Preço/m²'].mean() if not filtered.empty else 0
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-label">Preço/m² Médio</div>
-        <div class="kpi-value">{format_brl(avg_pm2)}</div>
-        <div class="kpi-sublabel">por metro quadrado</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col4:
-    avg_area = filtered['Área (m²)'].mean() if not filtered.empty else 0
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-label">Área Média</div>
-        <div class="kpi-value">{avg_area:.0f} m²</div>
-        <div class="kpi-sublabel">média dos filtrados</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col5:
-    avg_condo = filtered['Condomínio'].mean() if not filtered.empty else 0
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-label">Condomínio Médio</div>
-        <div class="kpi-value">{format_brl(avg_condo)}</div>
-        <div class="kpi-sublabel">encargos mensais</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-
-# ============================================================
-# GRÁFICOS
-# ============================================================
-chart_layout = dict(
-    template=chart_template,
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(color=text_color, family='Inter, sans-serif'),
-    margin=dict(l=40, r=20, t=50, b=40),
-    hoverlabel=dict(bgcolor=sidebar_bg, font_color=text_color),
-)
-
-if not filtered.empty:
-    chart_col1, chart_col2 = st.columns(2)
+# ============ ABA 1: DASHBOARD ============
+with tab1:
+    # ============================================================
+    # KPIs
+    # ============================================================
+    col1, col2, col3, col4, col5 = st.columns(5)
     
-    with chart_col1:
-        st.markdown("#### 📊 Distribuição de Preços")
-        fig_hist = px.histogram(
-            filtered, x='Preço', nbins=30,
-            color_discrete_sequence=['#FF6B35'],
-            labels={'Preço': 'Preço (R$)', 'count': 'Quantidade'}
-        )
-        fig_hist.update_layout(**chart_layout, showlegend=False)
-        fig_hist.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
-        fig_hist.update_yaxes(gridcolor=grid_color, title='Quantidade')
-        st.plotly_chart(fig_hist, width="stretch")
+    with col1:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Imóveis</div>
+            <div class="kpi-value">{len(filtered):,}</div>
+            <div class="kpi-sublabel">{'registros totais' if show_all else 'únicos'}</div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    with chart_col2:
-        st.markdown(f"#### 🏘️ Preço/m² por Bairro")
-        avg_by_bairro = filtered.groupby(COL_BAIRRO)['Preço/m²'].mean().reset_index()
-        avg_by_bairro = avg_by_bairro.sort_values('Preço/m²', ascending=True)
-        fig_bar = px.bar(
-            avg_by_bairro, x='Preço/m²', y=COL_BAIRRO, orientation='h',
-            color='Preço/m²', color_continuous_scale=['#FF6B35', '#FF9F1C', '#FFD166'],
-            labels={'Preço/m²': 'R$/m²', COL_BAIRRO: ''}
-        )
-        fig_bar.update_layout(**chart_layout, showlegend=False, coloraxis_showscale=False)
-        fig_bar.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
-        fig_bar.update_yaxes(gridcolor=grid_color)
-        st.plotly_chart(fig_bar, width="stretch")
-
+    with col2:
+        avg_price = filtered['Preço'].mean() if not filtered.empty else 0
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Preço Médio</div>
+            <div class="kpi-value">{format_brl(avg_price)}</div>
+            <div class="kpi-sublabel">mediana: {format_brl(filtered['Preço'].median()) if not filtered.empty else 'N/A'}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        avg_pm2 = filtered['Preço/m²'].mean() if not filtered.empty else 0
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Preço/m² Médio</div>
+            <div class="kpi-value">{format_brl(avg_pm2)}</div>
+            <div class="kpi-sublabel">por metro quadrado</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        avg_area = filtered['Área (m²)'].mean() if not filtered.empty else 0
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Área Média</div>
+            <div class="kpi-value">{avg_area:.0f} m²</div>
+            <div class="kpi-sublabel">média dos filtrados</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col5:
+        avg_condo = filtered['Condomínio'].mean() if not filtered.empty else 0
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Condomínio Médio</div>
+            <div class="kpi-value">{format_brl(avg_condo)}</div>
+            <div class="kpi-sublabel">encargos mensais</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-
-    chart_col3, chart_col4 = st.columns(2)
     
-    with chart_col3:
-        st.markdown("#### 🏠 Tipos de Imóvel")
-        type_counts = filtered['Tipo'].value_counts().reset_index()
-        type_counts.columns = ['Tipo', 'Quantidade']
-        fig_donut = px.pie(
-            type_counts, values='Quantidade', names='Tipo', hole=0.55,
-            color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2']
-        )
-        fig_donut.update_layout(**chart_layout,
-            legend=dict(orientation='h', yanchor='bottom', y=-0.15, xanchor='center', x=0.5))
-        fig_donut.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
-        st.plotly_chart(fig_donut, width="stretch")
-    
-    with chart_col4:
-        st.markdown("#### 💎 Preço vs Área")
-        scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
-        trendline_mode = "ols" if HAS_STATSMODELS else None
-        fig_scatter = px.scatter(
-            scatter_df, x='Área (m²)', y='Preço', color='Tipo',
-            size='Preço/m²', size_max=15, opacity=0.7, trendline=trendline_mode,
-            color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
-            labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
-            hover_data=[COL_BAIRRO, 'Quartos']
-        )
-        fig_scatter.update_layout(**chart_layout,
-            legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5))
-        fig_scatter.update_xaxes(gridcolor=grid_color)
-        fig_scatter.update_yaxes(gridcolor=grid_color, tickformat=',.0f')
-        st.plotly_chart(fig_scatter, width="stretch")
-
-st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-
-# ============================================================
-# TABELA DE DADOS
-# ============================================================
-st.markdown("#### 📋 Listagem de Imóveis")
-
-# 🔍 Search inputs for each column - organized in columns
-search_col1, search_col2, search_col3, search_col4 = st.columns(4)
-
-with search_col1:
-    search_id = st.text_input("🆔 ID", placeholder="Buscar ID...", key="search_id", help="Digite parte do ID do imóvel")
-
-with search_col2:
-    search_bairro = st.text_input("📍 Bairro", placeholder="Ex: Vila...", key="search_bairro", help="Busca parcial em Bairro")
-
-with search_col3:
-    search_tipo = st.text_input("🏠 Tipo", placeholder="Ex: Apart...", key="search_tipo", help="Busca parcial em Tipo")
-
-with search_col4:
-    search_endereco = st.text_input("📮 Endereço", placeholder="Ex: Rua...", key="search_endereco", help="Busca parcial em Endereço")
-
-# Apply filters based on search inputs
-if search_id:
-    filtered = filtered[filtered['ID Imóvel'].astype(str).str.contains(search_id, case=False, na=False)]
-
-if search_bairro:
-    filtered = filtered[filtered[COL_BAIRRO].astype(str).str.contains(search_bairro, case=False, na=False)]
-
-if search_tipo:
-    filtered = filtered[filtered['Tipo'].astype(str).str.contains(search_tipo, case=False, na=False)]
-
-if search_endereco:
-    filtered = filtered[filtered['Endereço'].astype(str).str.contains(search_endereco, case=False, na=False)]
-
-# Calcular IBairro (Índice de Preço do Bairro)
-bairro_avg_pm2 = df_raw.groupby(COL_BAIRRO)['Preço/m²'].mean()
-filtered['IBairro'] = filtered[COL_BAIRRO].apply(
-    lambda b: filtered[filtered[COL_BAIRRO] == b]['Preço/m²'].values[0] / bairro_avg_pm2.get(b, 1) 
-    if b in bairro_avg_pm2.index and len(filtered[filtered[COL_BAIRRO] == b]) > 0 else 0
-)
-filtered['IBairro'] = filtered.apply(
-    lambda row: row['Preço/m²'] / bairro_avg_pm2.get(row[COL_BAIRRO], 1) if bairro_avg_pm2.get(row[COL_BAIRRO], 0) > 0 else 0,
-    axis=1
-)
-
-display_cols = [
-    'ID Imóvel', COL_BAIRRO, 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
-    'Área (m²)', 'Preço/m²', 'IBairro', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
-]
-display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
-
-# Renomear colunas para exibição final (garante cabeçalho correto)
-display_df = display_df.rename(columns={
-    'Preço': 'Preço (R$)',
-    'Condomínio': 'Condomínio (R$)',
-    'Área (m²)': 'Área (m²)',
-    'Preço/m²': 'Preço/m² (R$)',
-    'IBairro': 'IBairro',
-    'Quartos': 'Quartos',
-    'Data e Hora da Extração': 'Captura'
-})
-
-# Formatação estilo brasileiro (Pontos para milhar)
-def brl_fmt(x):
-    try:
-        return f"R$ {int(x):,}".replace(",", ".")
-    except:
-        return str(x)
-
-# Para grandes datasets (>1000 linhas), usar formatação simples
-# Para pequenos datasets, usar Styler com formatação avançada
-if len(display_df) > 1000:
-    # Formatação simples para grandes datasets
-    display_df_fmt = display_df.copy()
-    for col in ['Preço (R$)', 'Condomínio (R$)', 'Preço/m² (R$)']:
-        if col in display_df_fmt.columns:
-            display_df_fmt[col] = display_df_fmt[col].apply(lambda x: brl_fmt(x) if pd.notna(x) else "N/A")
-    if 'Área (m²)' in display_df_fmt.columns:
-        display_df_fmt['Área (m²)'] = display_df_fmt['Área (m²)'].apply(lambda x: f"{int(x):,} m²".replace(",", ".") if pd.notna(x) else "N/A")
-    
-    st.dataframe(
-        display_df_fmt,
-        width="stretch",
-        height=500,
-        column_config={
-            "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-            "Captura": st.column_config.TextColumn("📅 Captura"),
-            "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-            COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-        },
-        hide_index=True
+    # ============================================================
+    # GRÁFICOS
+    # ============================================================
+    chart_layout = dict(
+        template=chart_template,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=text_color, family='Inter, sans-serif'),
+        margin=dict(l=40, r=20, t=50, b=40),
+        hoverlabel=dict(bgcolor=sidebar_bg, font_color=text_color),
     )
-else:
-    # Usar Styler para pequenos datasets
-    def highlight_ibairro(val):
-        """Colorir IBairro: verde se < 1, vermelho se >= 1"""
-        if pd.isna(val) or val == 0:
-            return ''
-        elif val < 1:
-            return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0'  # Verde
-        else:
-            return 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'  # Vermelho
     
-    styler = display_df.style.format({
-        'Preço (R$)': brl_fmt,
-        'Condomínio (R$)': brl_fmt,
-        'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
-        'Preço/m² (R$)': brl_fmt,
-        'IBairro': lambda x: f"{x:.2f}" if x > 0 else "N/A"
-    }).map(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
+    if not filtered.empty:
+        chart_col1, chart_col2 = st.columns(2)
+        
+        with chart_col1:
+            st.markdown("#### 📊 Distribuição de Preços")
+            fig_hist = px.histogram(
+                filtered, x='Preço', nbins=30,
+                color_discrete_sequence=['#FF6B35'],
+                labels={'Preço': 'Preço (R$)', 'count': 'Quantidade'}
+            )
+            fig_hist.update_layout(**chart_layout, showlegend=False)
+            fig_hist.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
+            fig_hist.update_yaxes(gridcolor=grid_color, title='Quantidade')
+            st.plotly_chart(fig_hist, width="stretch")
+        
+        with chart_col2:
+            st.markdown(f"#### 🏘️ Preço/m² por Bairro")
+            avg_by_bairro = filtered.groupby(COL_BAIRRO)['Preço/m²'].mean().reset_index()
+            avg_by_bairro = avg_by_bairro.sort_values('Preço/m²', ascending=True)
+            fig_bar = px.bar(
+                avg_by_bairro, x='Preço/m²', y=COL_BAIRRO, orientation='h',
+                color='Preço/m²', color_continuous_scale=['#FF6B35', '#FF9F1C', '#FFD166'],
+                labels={'Preço/m²': 'R$/m²', COL_BAIRRO: ''}
+            )
+            fig_bar.update_layout(**chart_layout, showlegend=False, coloraxis_showscale=False)
+            fig_bar.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
+            fig_bar.update_yaxes(gridcolor=grid_color)
+            st.plotly_chart(fig_bar, width="stretch")
     
-    st.dataframe(
-        styler,
-        width="stretch",
-        height=500,
-        column_config={
-            "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-            "Captura": st.column_config.TextColumn("📅 Captura"),
-            "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-            COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-        },
-        hide_index=True
+        st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+    
+        chart_col3, chart_col4 = st.columns(2)
+        
+        with chart_col3:
+            st.markdown("#### 🏠 Tipos de Imóvel")
+            type_counts = filtered['Tipo'].value_counts().reset_index()
+            type_counts.columns = ['Tipo', 'Quantidade']
+            fig_donut = px.pie(
+                type_counts, values='Quantidade', names='Tipo', hole=0.55,
+                color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2']
+            )
+            fig_donut.update_layout(**chart_layout,
+                legend=dict(orientation='h', yanchor='bottom', y=-0.15, xanchor='center', x=0.5))
+            fig_donut.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
+            st.plotly_chart(fig_donut, width="stretch")
+        
+        with chart_col4:
+            st.markdown("#### 💎 Preço vs Área")
+            scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
+            trendline_mode = "ols" if HAS_STATSMODELS else None
+            fig_scatter = px.scatter(
+                scatter_df, x='Área (m²)', y='Preço', color='Tipo',
+                size='Preço/m²', size_max=15, opacity=0.7, trendline=trendline_mode,
+                color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
+                labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
+                hover_data=[COL_BAIRRO, 'Quartos']
+            )
+            fig_scatter.update_layout(**chart_layout,
+                legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5))
+            fig_scatter.update_xaxes(gridcolor=grid_color)
+            fig_scatter.update_yaxes(gridcolor=grid_color, tickformat=',.0f')
+            st.plotly_chart(fig_scatter, width="stretch")
+    
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+    
+    # ============================================================
+    # TABELA DE DADOS
+    # ============================================================
+    st.markdown("#### 📋 Listagem de Imóveis")
+    
+    # 🔍 Search inputs for each column - organized in columns
+    search_col1, search_col2, search_col3, search_col4 = st.columns(4)
+    
+    with search_col1:
+        search_id = st.text_input("🆔 ID", placeholder="Buscar ID...", key="search_id", help="Digite parte do ID do imóvel")
+    
+    with search_col2:
+        search_bairro = st.text_input("📍 Bairro", placeholder="Ex: Vila...", key="search_bairro", help="Busca parcial em Bairro")
+    
+    with search_col3:
+        search_tipo = st.text_input("🏠 Tipo", placeholder="Ex: Apart...", key="search_tipo", help="Busca parcial em Tipo")
+    
+    with search_col4:
+        search_endereco = st.text_input("📮 Endereço", placeholder="Ex: Rua...", key="search_endereco", help="Busca parcial em Endereço")
+    
+    # Apply filters based on search inputs
+    if search_id:
+        filtered = filtered[filtered['ID Imóvel'].astype(str).str.contains(search_id, case=False, na=False)]
+    
+    if search_bairro:
+        filtered = filtered[filtered[COL_BAIRRO].astype(str).str.contains(search_bairro, case=False, na=False)]
+    
+    if search_tipo:
+        filtered = filtered[filtered['Tipo'].astype(str).str.contains(search_tipo, case=False, na=False)]
+    
+    if search_endereco:
+        filtered = filtered[filtered['Endereço'].astype(str).str.contains(search_endereco, case=False, na=False)]
+    
+    # Calcular IBairro (Índice de Preço do Bairro)
+    bairro_avg_pm2 = df_raw.groupby(COL_BAIRRO)['Preço/m²'].mean()
+    filtered['IBairro'] = filtered[COL_BAIRRO].apply(
+        lambda b: filtered[filtered[COL_BAIRRO] == b]['Preço/m²'].values[0] / bairro_avg_pm2.get(b, 1) 
+        if b in bairro_avg_pm2.index and len(filtered[filtered[COL_BAIRRO] == b]) > 0 else 0
     )
+    filtered['IBairro'] = filtered.apply(
+        lambda row: row['Preço/m²'] / bairro_avg_pm2.get(row[COL_BAIRRO], 1) if bairro_avg_pm2.get(row[COL_BAIRRO], 0) > 0 else 0,
+        axis=1
+    )
+    
+    display_cols = [
+        'ID Imóvel', COL_BAIRRO, 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
+        'Área (m²)', 'Preço/m²', 'IBairro', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
+    ]
+    display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
+    
+    # Renomear colunas para exibição final (garante cabeçalho correto)
+    display_df = display_df.rename(columns={
+        'Preço': 'Preço (R$)',
+        'Condomínio': 'Condomínio (R$)',
+        'Área (m²)': 'Área (m²)',
+        'Preço/m²': 'Preço/m² (R$)',
+        'IBairro': 'IBairro',
+        'Quartos': 'Quartos',
+        'Data e Hora da Extração': 'Captura'
+    })
+    
+    # Formatação estilo brasileiro (Pontos para milhar)
+    def brl_fmt(x):
+        try:
+            return f"R$ {int(x):,}".replace(",", ".")
+        except:
+            return str(x)
+    
+    # Para grandes datasets (>1000 linhas), usar formatação simples
+    # Para pequenos datasets, usar Styler com formatação avançada
+    if len(display_df) > 1000:
+        # Formatação simples para grandes datasets
+        display_df_fmt = display_df.copy()
+        for col in ['Preço (R$)', 'Condomínio (R$)', 'Preço/m² (R$)']:
+            if col in display_df_fmt.columns:
+                display_df_fmt[col] = display_df_fmt[col].apply(lambda x: brl_fmt(x) if pd.notna(x) else "N/A")
+        if 'Área (m²)' in display_df_fmt.columns:
+            display_df_fmt['Área (m²)'] = display_df_fmt['Área (m²)'].apply(lambda x: f"{int(x):,} m²".replace(",", ".") if pd.notna(x) else "N/A")
+        
+        st.dataframe(
+            display_df_fmt,
+            width="stretch",
+            height=500,
+            column_config={
+                "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
+                "Captura": st.column_config.TextColumn("📅 Captura"),
+                "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
+                COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
+            },
+            hide_index=True
+        )
+    else:
+        # Usar Styler para pequenos datasets
+        def highlight_ibairro(val):
+            """Colorir IBairro: verde se < 1, vermelho se >= 1"""
+            if pd.isna(val) or val == 0:
+                return ''
+            elif val < 1:
+                return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0'  # Verde
+            else:
+                return 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'  # Vermelho
+        
+        styler = display_df.style.format({
+            'Preço (R$)': brl_fmt,
+            'Condomínio (R$)': brl_fmt,
+            'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
+            'Preço/m² (R$)': brl_fmt,
+            'IBairro': lambda x: f"{x:.2f}" if x > 0 else "N/A"
+        }).map(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
+        
+        st.dataframe(
+            styler,
+            width="stretch",
+            height=500,
+            column_config={
+                "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
+                "Captura": st.column_config.TextColumn("📅 Captura"),
+                "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
+                COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
+            },
+            hide_index=True
+        )
+    
+    unique_count = filtered['ID Imóvel'].nunique() if not filtered.empty else 0
+    st.caption(f"Exibindo {len(filtered)} registros ({unique_count} imóveis únicos) | Última atualização: {df_raw['Data e Hora da Extração'].max()}")
 
-unique_count = filtered['ID Imóvel'].nunique() if not filtered.empty else 0
-st.caption(f"Exibindo {len(filtered)} registros ({unique_count} imóveis únicos) | Última atualização: {df_raw['Data e Hora da Extração'].max()}")
+
+# ============ ABA 2: MAPA DE CALOR ============
+with tab2:
+    st.markdown("#### 🗺️ Mapa de Calor - Preços Médios por Bairro")
+    
+    # Criar mapa com todos os dados (sem filtros de preço/área, apenas bairro e tipo)
+    mapa_filtered = df[
+        (df[COL_BAIRRO].isin(sel_bairros)) &
+        (df['Tipo'].isin(sel_tipos)) &
+        (df['Quartos'].isin(sel_quartos))
+    ].copy()
+    
+    if not mapa_filtered.empty:
+        fig_mapa = criar_mapa_calor(mapa_filtered)
+        if fig_mapa:
+            st.plotly_chart(fig_mapa, use_container_width=True)
+            
+            st.markdown("---")
+            st.markdown("#### 📊 Estatísticas por Bairro")
+            tabela_bairros = criar_tabela_bairros(mapa_filtered)
+            if tabela_bairros is not None:
+                tabela_display = tabela_bairros.copy()
+                tabela_display['Preço Min'] = tabela_display['Preço Min'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
+                tabela_display['Preço Max'] = tabela_display['Preço Max'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
+                tabela_display['Preço Médio'] = tabela_display['Preço Médio'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
+                tabela_display['Preço/m² Médio'] = tabela_display['Preço/m² Médio'].apply(lambda x: f"R$ {int(x):,.0f}".replace(",", "."))
+                tabela_display['Área Média'] = tabela_display['Área Média'].apply(lambda x: f"{int(x):,} m²".replace(",", "."))
+                tabela_display = tabela_display.rename(columns={'Imóveis': '🏠 Imóveis'})
+                
+                st.dataframe(tabela_display, use_container_width=True, hide_index=True)
+    else:
+        st.warning("❌ Nenhum dado disponível com os filtros selecionados")
+

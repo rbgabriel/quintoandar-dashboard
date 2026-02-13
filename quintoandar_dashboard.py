@@ -417,30 +417,57 @@ display_df = display_df.rename(columns={
     'Data e Hora da Extração': 'Captura'
 })
 
-# Formatação estilo brasileiro (Pontos para milhar) com Pandas Styler
+# Formatação estilo brasileiro (Pontos para milhar)
 def brl_fmt(x):
-    return f"{x:,.0f}".replace(",", ".")
+    try:
+        return f"R$ {int(x):,}".replace(",", ".")
+    except:
+        return str(x)
 
-# Styler mantém o dado original para ordenação (em versões recentes do Streamlit)
-styler = display_df.style.format({
-    'Preço (R$)': brl_fmt,
-    'Condomínio (R$)': brl_fmt,
-    'Área (m²)': lambda x: f"{x:,.0f} m²".replace(",", "."),
-    'Preço/m² (R$)': brl_fmt
-})
-
-st.dataframe(
-    styler,
-    width="stretch",
-    height=500,
-    column_config={
-        "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-        "Captura": st.column_config.TextColumn("📅 Captura"),
-        "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-        COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-    },
-    hide_index=True
-)
+# Para grandes datasets (>1000 linhas), usar formatação simples
+# Para pequenos datasets, usar Styler com formatação avançada
+if len(display_df) > 1000:
+    # Formatação simples para grandes datasets
+    display_df_fmt = display_df.copy()
+    for col in ['Preço (R$)', 'Condomínio (R$)', 'Preço/m² (R$)']:
+        if col in display_df_fmt.columns:
+            display_df_fmt[col] = display_df_fmt[col].apply(lambda x: brl_fmt(x) if pd.notna(x) else "N/A")
+    if 'Área (m²)' in display_df_fmt.columns:
+        display_df_fmt['Área (m²)'] = display_df_fmt['Área (m²)'].apply(lambda x: f"{int(x):,} m²".replace(",", ".") if pd.notna(x) else "N/A")
+    
+    st.dataframe(
+        display_df_fmt,
+        width="stretch",
+        height=500,
+        column_config={
+            "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
+            "Captura": st.column_config.TextColumn("📅 Captura"),
+            "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
+            COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
+        },
+        hide_index=True
+    )
+else:
+    # Usar Styler para pequenos datasets
+    styler = display_df.style.format({
+        'Preço (R$)': brl_fmt,
+        'Condomínio (R$)': brl_fmt,
+        'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
+        'Preço/m² (R$)': brl_fmt
+    })
+    
+    st.dataframe(
+        styler,
+        width="stretch",
+        height=500,
+        column_config={
+            "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
+            "Captura": st.column_config.TextColumn("📅 Captura"),
+            "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
+            COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
+        },
+        hide_index=True
+    )
 
 unique_count = filtered['ID Imóvel'].nunique() if not filtered.empty else 0
 st.caption(f"Exibindo {len(filtered)} registros ({unique_count} imóveis únicos) | Última atualização: {df_raw['Data e Hora da Extração'].max()}")

@@ -3,43 +3,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
-from bairros_zonas import BAIRROS_ZONAS_MAPPING, BAIRROS_NORMALIZATION
 
 try:
     import statsmodels.api as sm
     HAS_STATSMODELS = True
 except Exception:
     HAS_STATSMODELS = False
-
-# ============================================================
-# BAIRROS & ZONAS MAPPING
-# ============================================================
-ZONE_MAPPING = BAIRROS_ZONAS_MAPPING
-NORMALIZATION = BAIRROS_NORMALIZATION
-
-def normalize_bairro(bairro):
-    """Normaliza nome do bairro (remove variacoes e inconsistencias)"""
-    if not bairro or pd.isna(bairro):
-        return "N/A"
-    
-    bairro_normalized = str(bairro).strip().lower()
-    
-    # Verificar se ha mapeamento especifico
-    if bairro_normalized in NORMALIZATION:
-        return NORMALIZATION[bairro_normalized]
-    
-    # Se nao tiver mapeamento, retornar o bairro original com primeira letra maiuscula
-    return str(bairro).strip()
-
-def get_zone_for_bairro(bairro):
-    """Obtem a zona (Zona Sul, Norte, Leste, Oeste, Centro) para um bairro"""
-    normalized = normalize_bairro(bairro)
-    
-    for zone, bairros_list in ZONE_MAPPING.items():
-        if normalized in bairros_list:
-            return zone
-    
-    return "Sem zona"
 
 # ============================================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -171,11 +140,6 @@ def load_data(file_path, _file_mtime):
     
     # Recalcular Preço/m² para consistência
     df['Preço/m²'] = df.apply(lambda r: round(r['Preço'] / r['Área (m²)'], 2) if r['Área (m²)'] > 0 else 0, axis=1)
-
-    # Normalizar bairros e adicionar zona
-    if 'Bairro' in df.columns:
-        df['Bairro'] = df['Bairro'].apply(normalize_bairro)
-        df['Zona'] = df['Bairro'].apply(get_zone_for_bairro)
     
     return df
 
@@ -222,7 +186,6 @@ df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subs
 # ============================================================
 df_default = df_latest if not df_latest.empty else df_raw
 default_bairros = sorted(df_default[COL_BAIRRO].dropna().unique().tolist())
-default_zonas = sorted([z for z in df_default.get('Zona', pd.Series()).dropna().unique().tolist() if z != "Sem zona"])
 default_tipos = sorted(df_default['Tipo'].dropna().unique().tolist())
 default_price_min = int(df_default['Preço'].min())
 default_price_max = int(df_default['Preço'].max())
@@ -245,7 +208,6 @@ with st.sidebar:
                 "show_all": False,
                 "bairro_search": "",
                 "sel_bairros": default_bairros,
-                "sel_zonas": default_zonas,
                 "sel_tipos": default_tipos,
                 "price_input_min": default_price_min,
                 "price_input_max": default_price_max,
@@ -275,12 +237,6 @@ with st.sidebar:
     else:
         bairros_filtered = bairros
     sel_bairros = st.multiselect("Bairro", bairros_filtered, default=bairros_filtered, key="sel_bairros")
-    
-    # Zona (new filter)
-    st.markdown("---")
-    zonas = sorted([z for z in df.get('Zona', pd.Series()).dropna().unique().tolist() if z != "Sem zona"])
-    sel_zonas = st.multiselect("📍 Zona", zonas, default=zonas, key="sel_zonas",
-                                help="Zona Sul, Norte, Leste, Oeste, Centro")
     
     # Tipo
     st.markdown("---")
@@ -336,7 +292,6 @@ with st.sidebar:
 # ============================================================
 filtered = df[
     (df[COL_BAIRRO].isin(sel_bairros)) &
-    (df['Zona'].isin(sel_zonas)) &
     (df['Tipo'].isin(sel_tipos)) &
     (df['Preço'].between(sel_price[0], sel_price[1])) &
     (df['Área (m²)'].between(sel_area[0], sel_area[1])) &
@@ -482,7 +437,7 @@ st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 st.markdown("#### 📋 Listagem de Imóveis")
 
 # 🔍 Search inputs for each column - organized in columns
-search_col1, search_col2, search_col3, search_col4, search_col5 = st.columns(5)
+search_col1, search_col2, search_col3, search_col4 = st.columns(4)
 
 with search_col1:
     search_id = st.text_input("🆔 ID", placeholder="Buscar ID...", key="search_id", help="Digite parte do ID do imóvel")
@@ -491,12 +446,9 @@ with search_col2:
     search_bairro = st.text_input("📍 Bairro", placeholder="Ex: Vila...", key="search_bairro", help="Busca parcial em Bairro")
 
 with search_col3:
-    search_zona = st.text_input("🗺️ Zona", placeholder="Ex: Sul...", key="search_zona", help="Busca parcial em Zona")
-
-with search_col4:
     search_tipo = st.text_input("🏠 Tipo", placeholder="Ex: Apart...", key="search_tipo", help="Busca parcial em Tipo")
 
-with search_col5:
+with search_col4:
     search_endereco = st.text_input("📮 Endereço", placeholder="Ex: Rua...", key="search_endereco", help="Busca parcial em Endereço")
 
 # Apply filters based on search inputs
@@ -505,9 +457,6 @@ if search_id:
 
 if search_bairro:
     filtered = filtered[filtered[COL_BAIRRO].astype(str).str.contains(search_bairro, case=False, na=False)]
-
-if search_zona:
-    filtered = filtered[filtered['Zona'].astype(str).str.contains(search_zona, case=False, na=False)]
 
 if search_tipo:
     filtered = filtered[filtered['Tipo'].astype(str).str.contains(search_tipo, case=False, na=False)]
@@ -527,7 +476,7 @@ filtered['IBairro'] = filtered.apply(
 )
 
 display_cols = [
-    'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
+    'ID Imóvel', COL_BAIRRO, 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
     'Área (m²)', 'Preço/m²', 'IBairro', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
 display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()

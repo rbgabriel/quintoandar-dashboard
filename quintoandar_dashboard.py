@@ -48,36 +48,17 @@ st.set_page_config(
 # ============================================================
 # TEMA E CSS
 # ============================================================
-with st.sidebar:
-    st.markdown("## ⚙️ Configuração")
-    light_mode = st.toggle("☀️ Modo Claro", value=False)
-    st.markdown("---")
-
-# Definição de cores baseada no modo
-if light_mode:
-    # LIGH MODE (High Contrast)
-    bg_color = "#FFFFFF"
-    card_bg = "#FFFFFF"
-    card_border = "#D1D5DB"  # Darker gray for visibility
-    text_color = "#111827"   # Almost black
-    subtext_color = "#4B5563"
-    sidebar_bg = "#F9FAFB"
-    chart_template = "plotly_white"
-    chart_bg = "rgba(0,0,0,0)"
-    grid_color = "#E5E7EB"
-    title_gradient = "linear-gradient(90deg, #EA580C, #D97706)"  # Darker orange
-else:
-    # DARK MODE (Default)
-    bg_color = "#0E1117"
-    card_bg = "linear-gradient(135deg, #1A1D24 0%, #252830 100%)"
-    card_border = "#2D3139"
-    text_color = "#FAFAFA"
-    subtext_color = "#8B8D93"
-    sidebar_bg = "#12151A"
-    chart_template = "plotly_dark"
-    chart_bg = "rgba(0,0,0,0)"
-    grid_color = "#2D3139"
-    title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
+# DARK MODE (Default)
+bg_color = "#0E1117"
+card_bg = "linear-gradient(135deg, #1A1D24 0%, #252830 100%)"
+card_border = "#2D3139"
+text_color = "#FAFAFA"
+subtext_color = "#8B8D93"
+sidebar_bg = "#12151A"
+chart_template = "plotly_dark"
+chart_bg = "rgba(0,0,0,0)"
+grid_color = "#2D3139"
+title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
 
 st.markdown(f"""
 <style>
@@ -269,19 +250,30 @@ with st.sidebar:
     price_min = int(df['Preço'].min())
     price_max = int(df['Preço'].max())
     if price_max > price_min:
+        col_price1, col_price2 = st.columns(2)
+        with col_price1:
+            price_input_min = st.number_input("Preço Min (R$)", value=price_min, min_value=price_min, max_value=price_max, step=10000)
+        with col_price2:
+            price_input_max = st.number_input("Preço Max (R$)", value=price_max, min_value=price_min, max_value=price_max, step=10000)
         sel_price = st.slider(
-            "Faixa de Preço (R$)",
+            "Ajuste com slider:",
             min_value=price_min, max_value=price_max,
-            value=(price_min, price_max), step=10000, format="R$ %d"
+            value=(price_input_min, price_input_max), step=10000, format="R$ %d"
         )
     else:
         sel_price = (price_min, price_max)
     
     # Área
+    st.markdown("---")
     area_min = int(df['Área (m²)'].min())
     area_max = int(df['Área (m²)'].max())
     if area_max > area_min:
-        sel_area = st.slider("Área (m²)", min_value=area_min, max_value=area_max, value=(area_min, area_max), step=5)
+        col_area1, col_area2 = st.columns(2)
+        with col_area1:
+            area_input_min = st.number_input("Área Min (m²)", value=area_min, min_value=area_min, max_value=area_max, step=5)
+        with col_area2:
+            area_input_max = st.number_input("Área Max (m²)", value=area_max, min_value=area_min, max_value=area_max, step=5)
+        sel_area = st.slider("Ajuste com slider:", min_value=area_min, max_value=area_max, value=(area_input_min, area_input_max), step=5)
     else:
         sel_area = (area_min, area_max)
     
@@ -480,7 +472,7 @@ if search_endereco:
     filtered = filtered[filtered['Endereço'].astype(str).str.contains(search_endereco, case=False, na=False)]
 
 display_cols = [
-    'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Preço', 'Condomínio',
+    'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
     'Área (m²)', 'Preço/m²', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
 display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()

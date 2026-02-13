@@ -4,21 +4,23 @@
 BAIRROS_ZONAS_MAPPING = {
     "Zona Centro": [
         "Centro", "Consolacao", "Republica", "Bom Retiro", "Bras",
-        "Cambuci", "Pari", "Santa Cecilia", "Se", "Tatuape"
+        "Cambuci", "Pari", "Santa Cecilia", "Se", "Tatuape", "Campos Eliseos",
+        "Centro Historico de Sao Paulo", "Higienopolis"
     ],
     "Zona Sul": [
-        "Aclimaçao", "Bela Vista", "Cambuci", "Imirim",
+        "Aclimacao", "Bela Vista", "Cambuci", "Imirim",
         "Ipiranga", "Jabaquara", "Jardim Paulista", "Parque Jabaquara",
         "Vila Andrade", "Vila Guarani", "Vila Monte Alegre", "Vila Pita",
         "Vila Sonia", "Vila Santa Catarina", "Macedo", "Santo Amaro",
-        "Saude", "Cursino", "Congonhas"
+        "Saude", "Cursino", "Congonhas", "Vila Parque Jabaquara", "Vila Firmiano Pinto",
+        "Cupece", "Jardim Vergueiro (sacoma)", "Sacoma"
     ],
     "Zona Norte": [
         "Barra Funda", "Brasilandia", "Cachoeirinha", "Casa Verde",
         "Freguesia do O", "Horto Florestal", "Jacana", "Jaragua", "Perus",
         "Pirituba", "Sao Domingos", "Tremembe", "Tucuruvi", "Vila Curuçá",
         "Vila Gilda", "Vila Guilherme", "Vila Mariana", "Vila Medeiros",
-        "Vila Nova Cachoeirinha"
+        "Vila Nova Cachoeirinha", "Vila Pirituba", "Tremebe"
     ],
     "Zona Leste": [
         "Agua Rasa", "Analia Franco", "Artur Alvim", "Belem", "Bras",
@@ -26,15 +28,21 @@ BAIRROS_ZONAS_MAPPING = {
         "Guaianazes", "Itaquera", "Jardim Iguatemi", "Jardim Oriental",
         "Jardim Vila Formosa", "Lajeado", "Maia", "Mooca", "Parque Doria",
         "Penha", "Ponte Rasa", "Sapopemba", "Sao Lucas", "Sao Mateus",
-        "Tatuape", "Terra da Esperança", "Parque Marajoara", "Vila Carbone",
-        "Vila Curuçá", "Vila Futura", "Vila Matilde", "Vila Re"
+        "Tatuape", "Terra da Esperanca", "Parque Marajoara", "Vila Carbone",
+        "Vila Curuca", "Vila Futura", "Vila Matilde", "Vila Re", "Vila Mazzei",
+        "Maranhao", "Cidade Antonio Estevao de Carvalho", "Jardim das Acacias",
+        "Alto da Mooca", "Jardim Sao Saverio", "Belenzinho", "Jardim Santa Emilia",
+        "Moinho Velho", "Vila Polopoli", "Jardim Umarizal", "Quarta Parada",
+        "Vila Santa Clara", "Colonia (zona Leste)", "Jardim Marajoara", "Agua Fria",
+        "Vila Campanela", "Jardim Iris", "Vila Formosa", "Cidade Vargas"
     ],
     "Zona Oeste": [
-        "Alto da Lapa", "Alto de Pinheiros", "Anhanguera", "Bairro da Esperança",
+        "Alto da Lapa", "Alto de Pinheiros", "Anhanguera", "Bairro da Esperanca",
         "Bom Retiro", "Butanta", "Cotia", "Jaguare", "Jardim Paulista", "Lapa",
         "Perdizes", "Pinheiros", "Pompeia", "Raposo Tavares", "Santo Amaro",
         "Sao Conrado", "Vila Leopoldina", "Vila Mariana", "Vila Madalena",
-        "Vila Sonia", "Morumbi", "Rio Pequeno", "Previdencia", "Vila Mineira"
+        "Vila Sonia", "Morumbi", "Rio Pequeno", "Previdencia", "Vila Mineira",
+        "Conjunto Residencial Butanta", "Fazenda Morumbi"
     ]
 }
 
@@ -61,5 +69,60 @@ BAIRROS_NORMALIZATION = {
     "jardim vila formosa": "Jardim Vila Formosa",
     "maranhao": "Maranhao",
     "cidade antonio estevao": "Cidade Antonio Estevao",
-    "conjunto residencial i": "Conjunto Residencial I"
+    "conjunto residencial i": "Conjunto Residencial I",
+    # Novos 37 bairros com suas variações (com e sem acento)
+    "tatuape": "Tatuape",
+    "tatuapé": "Tatuape",
+    "vila parque jabaquara": "Vila Parque Jabaquara",
+    "vila mazzei": "Vila Mazzei",
+    "santa cecilia": "Santa Cecilia",
+    "santa cecília": "Santa Cecilia",
+    "maranhao": "Maranhao",
+    "maranhão": "Maranhao",
+    "vila firmiano pinto": "Vila Firmiano Pinto",
+    "conjunto residencial butanta": "Conjunto Residencial Butanta",
+    "cupece": "Cupece",
+    "cupecê": "Cupece",
+    "cidade antonio estevao de carvalho": "Cidade Antonio Estevao de Carvalho",
+    "cidade antônio estêvão de carvalho": "Cidade Antonio Estevao de Carvalho",
+    "vila re": "Vila Re",
+    "vila ré": "Vila Re",
+    "jaguare": "Jaguare",
+    "jaguaré": "Jaguare",
+    "jardim das acacias": "Jardim das Acacias",
+    "vila pirituba": "Vila Pirituba",
+    "alto da mooca": "Alto da Mooca",
+    "fazenda morumbi": "Fazenda Morumbi",
+    "jardim sao saverio": "Jardim Sao Saverio",
+    "jardim são savério": "Jardim Sao Saverio",
+    "jardim vergueiro (sacoma)": "Jardim Vergueiro (sacoma)",
+    "jardim vergueiro (sacomã)": "Jardim Vergueiro (sacoma)",
+    "belenzinho": "Belenzinho",
+    "jardim santa emilia": "Jardim Santa Emilia",
+    "moinho velho": "Moinho Velho",
+    "vila polopoli": "Vila Polopoli",
+    "sacoma": "Sacoma",
+    "sacomã": "Sacoma",
+    "jardim umarizal": "Jardim Umarizal",
+    "quarta parada": "Quarta Parada",
+    "tremembe": "Tremebe",
+    "tremembé": "Tremebe",
+    "vila santa clara": "Vila Santa Clara",
+    "colonia (zona leste)": "Colonia (zona Leste)",
+    "colônia (zona leste)": "Colonia (zona Leste)",
+    "jardim marajoara": "Jardim Marajoara",
+    "agua fria": "Agua Fria",
+    "água fria": "Agua Fria",
+    "campos eliseos": "Campos Eliseos",
+    "campos elíseos": "Campos Eliseos",
+    "vila campanela": "Vila Campanela",
+    "jardim iris": "Jardim Iris",
+    "vila formosa": "Vila Formosa",
+    "cidade vargas": "Cidade Vargas",
+    "republica": "Republica",
+    "república": "Republica",
+    "centro historico de sao paulo": "Centro Historico de Sao Paulo",
+    "centro histórico de são paulo": "Centro Historico de Sao Paulo",
+    "higienopolis": "Higienopolis",
+    "higienópolis": "Higienopolis",
 }

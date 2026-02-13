@@ -445,16 +445,39 @@ st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 # ============================================================
 st.markdown("#### 📋 Listagem de Imóveis")
 
-# 🔍 Search box for address
-endereco_search = st.text_input(
-    "🔍 Pesquisar por endereço ou rua", 
-    placeholder="Ex: Rua Flechas, Vila Guarani...",
-    help="Digite parte do endereço para filtrar"
-)
+# 🔍 Search inputs for each column - organized in columns
+search_col1, search_col2, search_col3, search_col4, search_col5 = st.columns(5)
 
-# Filter by endereço if search is provided
-if endereco_search:
-    filtered = filtered[filtered['Endereço'].str.contains(endereco_search, case=False, na=False)]
+with search_col1:
+    search_id = st.text_input("🆔 ID", placeholder="Buscar ID...", key="search_id", help="Digite parte do ID do imóvel")
+
+with search_col2:
+    search_bairro = st.text_input("📍 Bairro", placeholder="Ex: Vila...", key="search_bairro", help="Busca parcial em Bairro")
+
+with search_col3:
+    search_zona = st.text_input("🗺️ Zona", placeholder="Ex: Sul...", key="search_zona", help="Busca parcial em Zona")
+
+with search_col4:
+    search_tipo = st.text_input("🏠 Tipo", placeholder="Ex: Apart...", key="search_tipo", help="Busca parcial em Tipo")
+
+with search_col5:
+    search_endereco = st.text_input("📮 Endereço", placeholder="Ex: Rua...", key="search_endereco", help="Busca parcial em Endereço")
+
+# Apply filters based on search inputs
+if search_id:
+    filtered = filtered[filtered['ID Imóvel'].astype(str).str.contains(search_id, case=False, na=False)]
+
+if search_bairro:
+    filtered = filtered[filtered[COL_BAIRRO].astype(str).str.contains(search_bairro, case=False, na=False)]
+
+if search_zona:
+    filtered = filtered[filtered['Zona'].astype(str).str.contains(search_zona, case=False, na=False)]
+
+if search_tipo:
+    filtered = filtered[filtered['Tipo'].astype(str).str.contains(search_tipo, case=False, na=False)]
+
+if search_endereco:
+    filtered = filtered[filtered['Endereço'].astype(str).str.contains(search_endereco, case=False, na=False)]
 
 display_cols = [
     'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Preço', 'Condomínio',

@@ -167,7 +167,7 @@ def format_brl(value):
 # ============================================================
 st.markdown("""
 <div class="main-header">
-    <h1>🏠 QuintoAndar Dashboard</h1>
+    <h1>🏠 QuintoAndar Dashboard v3.1</h1>
     <p>Análise interativa dos imóveis coletados</p>
 </div>
 """, unsafe_allow_html=True)

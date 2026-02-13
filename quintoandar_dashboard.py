@@ -402,27 +402,37 @@ display_cols = [
     'ID Imóvel', COL_BAIRRO, 'Tipo', 'Preço', 'Condomínio',
     'Área (m²)', 'Preço/m²', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
-display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
+# Renomear colunas para exibição final (garante cabeçalho correto)
+display_df = display_df.rename(columns={
+    'Preço': 'Preço (R$)',
+    'Condomínio': 'Condomínio (R$)',
+    'Área (m²)': 'Área (m²)',
+    'Preço/m²': 'Preço/m² (R$)',
+    'Quartos': 'Quartos',
+    'Data e Hora da Extração': 'Captura'
+})
 
-# Formatação via column_config para manter a ordenação numérica correta
-# (Streamlit 1.30+ ordena com base no tipo de dado)
+# Formatação estilo brasileiro (Pontos para milhar) com Pandas Styler
+def brl_fmt(x):
+    return f"{x:,.0f}".replace(",", ".")
+
+# Styler mantém o dado original para ordenação (em versões recentes do Streamlit)
+styler = display_df.style.format({
+    'Preço (R$)': brl_fmt,
+    'Condomínio (R$)': brl_fmt,
+    'Área (m²)': lambda x: f"{x:,.0f} m²".replace(",", "."),
+    'Preço/m² (R$)': brl_fmt
+})
 
 st.dataframe(
-    display_df,
+    styler,
     width="stretch",
     height=500,
     column_config={
         "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-        "Preço": st.column_config.NumberColumn("💰 Preço (R$)", format="%,.0f"),
-        "Condomínio": st.column_config.NumberColumn("🏢 Condo (R$)", format="%,.0f"),
-        "Área (m²)": st.column_config.NumberColumn("📐 Área (m²)", format="%,d"),
-        "Quartos": st.column_config.NumberColumn("🛏️ Quartos"),
-        COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-        "Tipo": st.column_config.TextColumn("🏠 Tipo"),
+        "Captura": st.column_config.TextColumn("📅 Captura"),
         "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-        "Endereço": st.column_config.TextColumn("📍 Endereço"),
-        "Preço/m²": st.column_config.NumberColumn("💲 R$/m²", format="%,.0f"),
-        "Data e Hora da Extração": st.column_config.TextColumn("📅 Captura"),
+        COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
     },
     hide_index=True
 )

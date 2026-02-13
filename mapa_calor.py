@@ -104,7 +104,7 @@ def criar_mapa_calor(df):
             oceancolor='rgba(20, 20, 50, 0.1)',
             showlakes=True,
             lakecolor='rgba(20, 20, 50, 0.1)',
-            coastcolor='rgba(100, 100, 100, 0.3)',
+            coastlinecolor='rgba(100, 100, 100, 0.3)',
             countrycolor='rgba(100, 100, 100, 0.3)',
             showframe=False,
             bgcolor='rgba(14, 17, 23, 0)'

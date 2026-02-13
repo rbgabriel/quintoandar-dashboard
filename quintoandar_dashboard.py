@@ -284,9 +284,15 @@ with st.sidebar:
     st.markdown("---")
     st.caption(f"Base atualizada: {df_raw['Data e Hora da Extração'].max()}")
     st.caption(f"Imóveis únicos: {df_raw['ID Imóvel'].nunique()} | Registros totais: {len(df_raw)}")
-    if st.button("🔄 Recarregar Dados"):
-        st.cache_data.clear()
-        st.rerun()
+    
+    col_refresh, col_reset = st.columns(2)
+    with col_refresh:
+        if st.button("🔄 Recarregar Dados"):
+            st.cache_data.clear()
+            st.rerun()
+    with col_reset:
+        if st.button("🔁 Reset Filtros"):
+            st.rerun()
 
 # ============================================================
 # APLICAR FILTROS
@@ -419,7 +425,7 @@ if not filtered.empty:
         scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
         fig_scatter = px.scatter(
             scatter_df, x='Área (m²)', y='Preço', color='Tipo',
-            size='Preço/m²', size_max=15, opacity=0.7,
+            size='Preço/m²', size_max=15, opacity=0.7, trendline="ols",
             color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
             labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
             hover_data=[COL_BAIRRO, 'Quartos']
@@ -471,9 +477,20 @@ if search_tipo:
 if search_endereco:
     filtered = filtered[filtered['Endereço'].astype(str).str.contains(search_endereco, case=False, na=False)]
 
+# Calcular IBairro (Índice de Preço do Bairro)
+bairro_avg_pm2 = df_raw.groupby(COL_BAIRRO)['Preço/m²'].mean()
+filtered['IBairro'] = filtered[COL_BAIRRO].apply(
+    lambda b: filtered[filtered[COL_BAIRRO] == b]['Preço/m²'].values[0] / bairro_avg_pm2.get(b, 1) 
+    if b in bairro_avg_pm2.index and len(filtered[filtered[COL_BAIRRO] == b]) > 0 else 0
+)
+filtered['IBairro'] = filtered.apply(
+    lambda row: row['Preço/m²'] / bairro_avg_pm2.get(row[COL_BAIRRO], 1) if bairro_avg_pm2.get(row[COL_BAIRRO], 0) > 0 else 0,
+    axis=1
+)
+
 display_cols = [
     'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Título/Descrição', 'Preço', 'Condomínio',
-    'Área (m²)', 'Preço/m²', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
+    'Área (m²)', 'Preço/m²', 'IBairro', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
 display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
 
@@ -483,6 +500,7 @@ display_df = display_df.rename(columns={
     'Condomínio': 'Condomínio (R$)',
     'Área (m²)': 'Área (m²)',
     'Preço/m²': 'Preço/m² (R$)',
+    'IBairro': 'IBairro',
     'Quartos': 'Quartos',
     'Data e Hora da Extração': 'Captura'
 })
@@ -519,12 +537,22 @@ if len(display_df) > 1000:
     )
 else:
     # Usar Styler para pequenos datasets
+    def highlight_ibairro(val):
+        """Colorir IBairro: verde se < 1, vermelho se >= 1"""
+        if pd.isna(val) or val == 0:
+            return ''
+        elif val < 1:
+            return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0'  # Verde
+        else:
+            return 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'  # Vermelho
+    
     styler = display_df.style.format({
         'Preço (R$)': brl_fmt,
         'Condomínio (R$)': brl_fmt,
         'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
-        'Preço/m² (R$)': brl_fmt
-    })
+        'Preço/m² (R$)': brl_fmt,
+        'IBairro': lambda x: f"{x:.2f}" if x > 0 else "N/A"
+    }).applymap(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
     
     st.dataframe(
         styler,

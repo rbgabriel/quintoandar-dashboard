@@ -13,7 +13,7 @@ BAIRROS_ZONAS_MAPPING = {
         "Vila Andrade", "Vila Guarani", "Vila Monte Alegre", "Vila Pita",
         "Vila Sonia", "Vila Santa Catarina", "Macedo", "Santo Amaro",
         "Saude", "Cursino", "Congonhas", "Vila Parque Jabaquara", "Vila Firmiano Pinto",
-        "Cupece", "Jardim Vergueiro (sacoma)", "Sacoma"
+        "Cupece", "Jardim Vergueiro (sacoma)", "Sacoma", "Vila da Saude", "Bosque da Saude", "Jardim da Saude"
     ],
     "Zona Norte": [
         "Barra Funda", "Brasilandia", "Cachoeirinha", "Casa Verde",
@@ -125,4 +125,13 @@ BAIRROS_NORMALIZATION = {
     "centro histórico de são paulo": "Centro Historico de Sao Paulo",
     "higienopolis": "Higienopolis",
     "higienópolis": "Higienopolis",
+    # Saúde e variações (Zona Sul)
+    "saude": "Saude",
+    "saúde": "Saude",
+    "vila da saude": "Vila da Saude",
+    "vila da saúde": "Vila da Saude",
+    "bosque da saude": "Bosque da Saude",
+    "bosque da saúde": "Bosque da Saude",
+    "jardim da saude": "Jardim da Saude",
+    "jardim da saúde": "Jardim da Saude",
 }

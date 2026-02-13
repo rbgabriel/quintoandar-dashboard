@@ -7,7 +7,7 @@ BAIRROS_ZONAS_MAPPING = {
         "Cambuci", "Pari", "Santa Cecilia", "Se", "Tatuape"
     ],
     "Zona Sul": [
-        "Aclimaçao", "Bela Vista", "Cambuci", "Consolacao", "Imirim",
+        "Aclimaçao", "Bela Vista", "Cambuci", "Imirim",
         "Ipiranga", "Jabaquara", "Jardim Paulista", "Parque Jabaquara",
         "Vila Andrade", "Vila Guarani", "Vila Monte Alegre", "Vila Pita",
         "Vila Sonia", "Vila Santa Catarina", "Macedo", "Santo Amaro",
@@ -45,7 +45,10 @@ BAIRROS_NORMALIZATION = {
     "vila guarani (zona sul)": "Vila Guarani",
     "vila guarani": "Vila Guarani",
     "consolacao": "Consolacao",
+    "consolação": "Consolacao",  # with accent
     "bela vista": "Bela Vista",
+    "aclimaçao": "Aclimaçao",
+    "aclimaacao": "Aclimaçao",
     "jardim oriental": "Jardim Oriental",
     "jabaquara": "Jabaquara",
     "vila monte alegre": "Vila Monte Alegre",

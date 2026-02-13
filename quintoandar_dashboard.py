@@ -84,20 +84,11 @@ st.markdown("""
 # ============================================================
 DATA_PATH = os.path.join("base", "quintoandar_database.xlsx")
 
-# Colunas numéricas que podem ter nomes antigos ("Bairro de Busca") ou novos ("Bairro")
-COL_BAIRRO = None
-COL_CIDADE = None
-
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
         return None
     df = pd.read_excel(DATA_PATH, dtype={'ID Imóvel': str})
-
-    # Compatibilidade: detectar nomes de coluna antigos vs novos
-    global COL_BAIRRO, COL_CIDADE
-    COL_BAIRRO = 'Bairro' if 'Bairro' in df.columns else 'Bairro de Busca'
-    COL_CIDADE = 'Cidade' if 'Cidade' in df.columns else 'Cidade de Busca'
 
     # Garantir tipos numéricos
     for col in ['Preço', 'Condomínio', 'Preço/m²']:
@@ -136,6 +127,10 @@ df_raw = load_data()
 if df_raw is None or df_raw.empty:
     st.error("❌ Nenhum dado encontrado. Execute o scraper primeiro: `python quintoandar_scraper.py`")
     st.stop()
+
+# Detectar nomes de coluna (compatível com dados antigos e novos)
+COL_BAIRRO = 'Bairro' if 'Bairro' in df_raw.columns else 'Bairro de Busca'
+COL_CIDADE = 'Cidade' if 'Cidade' in df_raw.columns else 'Cidade de Busca'
 
 # ============================================================
 # VISÃO: ÚLTIMA CAPTURA vs TODOS OS REGISTROS

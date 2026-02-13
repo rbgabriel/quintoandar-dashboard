@@ -24,17 +24,17 @@ with st.sidebar:
 
 # Definição de cores baseada no modo
 if light_mode:
-    # LIGH MODE
-    bg_color = "#F0F2F6"
-    card_bg = "white"
-    card_border = "#E6E9EF"
-    text_color = "#31333F"
-    subtext_color = "#555"
-    sidebar_bg = "#FFFFFF"
+    # LIGH MODE (High Contrast)
+    bg_color = "#FFFFFF"
+    card_bg = "#FFFFFF"
+    card_border = "#D1D5DB"  # Darker gray for visibility
+    text_color = "#111827"   # Almost black
+    subtext_color = "#4B5563"
+    sidebar_bg = "#F9FAFB"
     chart_template = "plotly_white"
     chart_bg = "rgba(0,0,0,0)"
-    grid_color = "#E6E9EF"
-    title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
+    grid_color = "#E5E7EB"
+    title_gradient = "linear-gradient(90deg, #EA580C, #D97706)"  # Darker orange
 else:
     # DARK MODE (Default)
     bg_color = "#0E1117"
@@ -413,15 +413,15 @@ st.dataframe(
     height=500,
     column_config={
         "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-        "Preço": st.column_config.NumberColumn("💰 Preço", format="R$ %,.0f"),
-        "Condomínio": st.column_config.NumberColumn("🏢 Condo", format="R$ %,.0f"),
-        "Área (m²)": st.column_config.NumberColumn("📐 Área", format="%,d m²"),
+        "Preço": st.column_config.NumberColumn("💰 Preço (R$)", format="%,.0f"),
+        "Condomínio": st.column_config.NumberColumn("🏢 Condo (R$)", format="%,.0f"),
+        "Área (m²)": st.column_config.NumberColumn("📐 Área (m²)", format="%,d"),
         "Quartos": st.column_config.NumberColumn("🛏️ Quartos"),
         COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
         "Tipo": st.column_config.TextColumn("🏠 Tipo"),
         "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
         "Endereço": st.column_config.TextColumn("📍 Endereço"),
-        "Preço/m²": st.column_config.NumberColumn("💲 R$/m²", format="R$ %,.0f"),
+        "Preço/m²": st.column_config.NumberColumn("💲 R$/m²", format="%,.0f"),
         "Data e Hora da Extração": st.column_config.TextColumn("📅 Captura"),
     },
     hide_index=True

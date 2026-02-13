@@ -3,6 +3,37 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+from bairros_zonas import BAIRROS_ZONAS_MAPPING, BAIRROS_NORMALIZATION
+
+# ============================================================
+# BAIRROS & ZONAS MAPPING
+# ============================================================
+ZONE_MAPPING = BAIRROS_ZONAS_MAPPING
+NORMALIZATION = BAIRROS_NORMALIZATION
+
+def normalize_bairro(bairro):
+    """Normaliza nome do bairro (remove variacoes e inconsistencias)"""
+    if not bairro or pd.isna(bairro):
+        return "N/A"
+    
+    bairro_normalized = str(bairro).strip().lower()
+    
+    # Verificar se ha mapeamento especifico
+    if bairro_normalized in NORMALIZATION:
+        return NORMALIZATION[bairro_normalized]
+    
+    # Se nao tiver mapeamento, retornar o bairro original com primeira letra maiuscula
+    return str(bairro).strip()
+
+def get_zone_for_bairro(bairro):
+    """Obtem a zona (Zona Sul, Norte, Leste, Oeste, Centro) para um bairro"""
+    normalized = normalize_bairro(bairro)
+    
+    for zone, bairros_list in ZONE_MAPPING.items():
+        if normalized in bairros_list:
+            return zone
+    
+    return "Sem zona"
 
 # ============================================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -154,6 +185,11 @@ def load_data(file_path, _file_mtime):
     # Recalcular Preço/m² para consistência
     df['Preço/m²'] = df.apply(lambda r: round(r['Preço'] / r['Área (m²)'], 2) if r['Área (m²)'] > 0 else 0, axis=1)
 
+    # Normalizar bairros e adicionar zona
+    if 'Bairro' in df.columns:
+        df['Bairro'] = df['Bairro'].apply(normalize_bairro)
+        df['Zona'] = df['Bairro'].apply(get_zone_for_bairro)
+    
     return df
 
 def format_brl(value):
@@ -217,7 +253,14 @@ with st.sidebar:
         bairros_filtered = bairros
     sel_bairros = st.multiselect("Bairro", bairros_filtered, default=bairros_filtered)
     
+    # Zona (new filter)
+    st.markdown("---")
+    zonas = sorted([z for z in df.get('Zona', pd.Series()).dropna().unique().tolist() if z != "Sem zona"])
+    sel_zonas = st.multiselect("📍 Zona", zonas, default=zonas, 
+                                help="Zona Sul, Norte, Leste, Oeste, Centro")
+    
     # Tipo
+    st.markdown("---")
     tipos = sorted(df['Tipo'].dropna().unique().tolist())
     sel_tipos = st.multiselect("Tipo de Imóvel", tipos, default=tipos)
     
@@ -258,6 +301,7 @@ with st.sidebar:
 # ============================================================
 filtered = df[
     (df[COL_BAIRRO].isin(sel_bairros)) &
+    (df['Zona'].isin(sel_zonas)) &
     (df['Tipo'].isin(sel_tipos)) &
     (df['Preço'].between(sel_price[0], sel_price[1])) &
     (df['Área (m²)'].between(sel_area[0], sel_area[1])) &
@@ -401,8 +445,19 @@ st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 # ============================================================
 st.markdown("#### 📋 Listagem de Imóveis")
 
+# 🔍 Search box for address
+endereco_search = st.text_input(
+    "🔍 Pesquisar por endereço ou rua", 
+    placeholder="Ex: Rua Flechas, Vila Guarani...",
+    help="Digite parte do endereço para filtrar"
+)
+
+# Filter by endereço if search is provided
+if endereco_search:
+    filtered = filtered[filtered['Endereço'].str.contains(endereco_search, case=False, na=False)]
+
 display_cols = [
-    'ID Imóvel', COL_BAIRRO, 'Tipo', 'Preço', 'Condomínio',
+    'ID Imóvel', COL_BAIRRO, 'Zona', 'Tipo', 'Preço', 'Condomínio',
     'Área (m²)', 'Preço/m²', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
 display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()

@@ -12,6 +12,8 @@ BAIRROS_ZONAS_MAPPING = {
         "Ipiranga", "Jabaquara", "Jardim Paulista", "Parque Jabaquara",
         "Vila Andrade", "Vila Guarani", "Vila Monte Alegre", "Vila Pita",
         "Vila Sonia", "Vila Santa Catarina", "Macedo", "Santo Amaro",
+        "Brooklin", "Brooklin Paulista", "Campo Belo", "Vila Olimpia",
+        "Itaim Bibi", "Cidade Moncoes", "Vila Cordeiro", "Jardim das Acacias",
         "Saude", "Cursino", "Congonhas", "Vila Parque Jabaquara", "Vila Firmiano Pinto",
         "Cupece", "Jardim Vergueiro (sacoma)", "Sacoma", "Vila da Saude", "Bosque da Saude", "Jardim da Saude"
     ],
@@ -134,4 +136,13 @@ BAIRROS_NORMALIZATION = {
     "bosque da saúde": "Bosque da Saude",
     "jardim da saude": "Jardim da Saude",
     "jardim da saúde": "Jardim da Saude",
+    "brooklin": "Brooklin",
+    "brooklin paulista": "Brooklin Paulista",
+    "campo belo": "Campo Belo",
+    "vila olimpia": "Vila Olimpia",
+    "vila olímpia": "Vila Olimpia",
+    "itaim bibi": "Itaim Bibi",
+    "cidade moncoes": "Cidade Moncoes",
+    "cidade monções": "Cidade Moncoes",
+    "vila cordeiro": "Vila Cordeiro",
 }

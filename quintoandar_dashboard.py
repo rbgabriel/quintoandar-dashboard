@@ -5,6 +5,12 @@ import plotly.graph_objects as go
 import os
 from bairros_zonas import BAIRROS_ZONAS_MAPPING, BAIRROS_NORMALIZATION
 
+try:
+    import statsmodels.api as sm
+    HAS_STATSMODELS = True
+except Exception:
+    HAS_STATSMODELS = False
+
 # ============================================================
 # BAIRROS & ZONAS MAPPING
 # ============================================================
@@ -212,13 +218,49 @@ COL_CIDADE = 'Cidade' if 'Cidade' in df_raw.columns else 'Cidade de Busca'
 df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subset=['ID Imóvel'], keep='last')
 
 # ============================================================
+# DEFAULTS — RESET DE FILTROS
+# ============================================================
+df_default = df_latest if not df_latest.empty else df_raw
+default_bairros = sorted(df_default[COL_BAIRRO].dropna().unique().tolist())
+default_zonas = sorted([z for z in df_default.get('Zona', pd.Series()).dropna().unique().tolist() if z != "Sem zona"])
+default_tipos = sorted(df_default['Tipo'].dropna().unique().tolist())
+default_price_min = int(df_default['Preço'].min())
+default_price_max = int(df_default['Preço'].max())
+default_area_min = int(df_default['Área (m²)'].min())
+default_area_max = int(df_default['Área (m²)'].max())
+default_quartos = sorted(df_default['Quartos'].unique().tolist())
+
+# ============================================================
 # SIDEBAR — FILTROS
 # ============================================================
 with st.sidebar:
     st.markdown("## 🔍 Filtros")
     
+    # Reset button at top - always visible
+    col_reset_top = st.columns(1)[0]
+    with col_reset_top:
+        if st.button("🔁 Reset Filtros", use_container_width=True, key="reset_top"):
+            # Reset all filter-related session state keys to defaults
+            st.session_state.update({
+                "show_all": False,
+                "bairro_search": "",
+                "sel_bairros": default_bairros,
+                "sel_zonas": default_zonas,
+                "sel_tipos": default_tipos,
+                "price_input_min": default_price_min,
+                "price_input_max": default_price_max,
+                "sel_price": (default_price_min, default_price_max),
+                "area_input_min": default_area_min,
+                "area_input_max": default_area_max,
+                "sel_area": (default_area_min, default_area_max),
+                "sel_quartos": default_quartos,
+            })
+            st.rerun()
+    
+    st.markdown("---")
+    
     # Toggle: ver todos os registros ou apenas os mais recentes
-    show_all = st.toggle("📜 Mostrar série temporal completa", value=False, 
+    show_all = st.toggle("📜 Mostrar série temporal completa", value=False, key="show_all",
                           help="Ativado: mostra TODOS os registros (mesmo imóvel repetido ao longo do tempo). Desativado: mostra apenas a captura mais recente de cada imóvel.")
     
     df = df_raw if show_all else df_latest
@@ -227,23 +269,23 @@ with st.sidebar:
     
     # Bairro (com busca)
     bairros = sorted(df[COL_BAIRRO].dropna().unique().tolist())
-    bairro_search = st.text_input("🔎 Buscar bairro", placeholder="Digite para filtrar...")
+    bairro_search = st.text_input("🔎 Buscar bairro", placeholder="Digite para filtrar...", key="bairro_search")
     if bairro_search:
         bairros_filtered = [b for b in bairros if bairro_search.lower() in b.lower()]
     else:
         bairros_filtered = bairros
-    sel_bairros = st.multiselect("Bairro", bairros_filtered, default=bairros_filtered)
+    sel_bairros = st.multiselect("Bairro", bairros_filtered, default=bairros_filtered, key="sel_bairros")
     
     # Zona (new filter)
     st.markdown("---")
     zonas = sorted([z for z in df.get('Zona', pd.Series()).dropna().unique().tolist() if z != "Sem zona"])
-    sel_zonas = st.multiselect("📍 Zona", zonas, default=zonas, 
+    sel_zonas = st.multiselect("📍 Zona", zonas, default=zonas, key="sel_zonas",
                                 help="Zona Sul, Norte, Leste, Oeste, Centro")
     
     # Tipo
     st.markdown("---")
     tipos = sorted(df['Tipo'].dropna().unique().tolist())
-    sel_tipos = st.multiselect("Tipo de Imóvel", tipos, default=tipos)
+    sel_tipos = st.multiselect("Tipo de Imóvel", tipos, default=tipos, key="sel_tipos")
     
     # Preço
     st.markdown("---")
@@ -252,13 +294,13 @@ with st.sidebar:
     if price_max > price_min:
         col_price1, col_price2 = st.columns(2)
         with col_price1:
-            price_input_min = st.number_input("Preço Min (R$)", value=price_min, min_value=price_min, max_value=price_max, step=10000)
+            price_input_min = st.number_input("Preço Min (R$)", value=price_min, min_value=price_min, max_value=price_max, step=10000, key="price_input_min")
         with col_price2:
-            price_input_max = st.number_input("Preço Max (R$)", value=price_max, min_value=price_min, max_value=price_max, step=10000)
+            price_input_max = st.number_input("Preço Max (R$)", value=price_max, min_value=price_min, max_value=price_max, step=10000, key="price_input_max")
         sel_price = st.slider(
             "Ajuste com slider:",
             min_value=price_min, max_value=price_max,
-            value=(price_input_min, price_input_max), step=10000, format="R$ %d"
+            value=(price_input_min, price_input_max), step=10000, format="R$ %d", key="sel_price"
         )
     else:
         sel_price = (price_min, price_max)
@@ -270,29 +312,24 @@ with st.sidebar:
     if area_max > area_min:
         col_area1, col_area2 = st.columns(2)
         with col_area1:
-            area_input_min = st.number_input("Área Min (m²)", value=area_min, min_value=area_min, max_value=area_max, step=5)
+            area_input_min = st.number_input("Área Min (m²)", value=area_min, min_value=area_min, max_value=area_max, step=5, key="area_input_min")
         with col_area2:
-            area_input_max = st.number_input("Área Max (m²)", value=area_max, min_value=area_min, max_value=area_max, step=5)
-        sel_area = st.slider("Ajuste com slider:", min_value=area_min, max_value=area_max, value=(area_input_min, area_input_max), step=5)
+            area_input_max = st.number_input("Área Max (m²)", value=area_max, min_value=area_min, max_value=area_max, step=5, key="area_input_max")
+        sel_area = st.slider("Ajuste com slider:", min_value=area_min, max_value=area_max, value=(area_input_min, area_input_max), step=5, key="sel_area")
     else:
         sel_area = (area_min, area_max)
     
     # Quartos
     quartos_opts = sorted(df['Quartos'].unique().tolist())
-    sel_quartos = st.multiselect("Quartos", quartos_opts, default=quartos_opts)
+    sel_quartos = st.multiselect("Quartos", quartos_opts, default=quartos_opts, key="sel_quartos")
 
     st.markdown("---")
     st.caption(f"Base atualizada: {df_raw['Data e Hora da Extração'].max()}")
     st.caption(f"Imóveis únicos: {df_raw['ID Imóvel'].nunique()} | Registros totais: {len(df_raw)}")
     
-    col_refresh, col_reset = st.columns(2)
-    with col_refresh:
-        if st.button("🔄 Recarregar Dados"):
-            st.cache_data.clear()
-            st.rerun()
-    with col_reset:
-        if st.button("🔁 Reset Filtros"):
-            st.rerun()
+    if st.button("🔄 Recarregar Dados", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
 
 # ============================================================
 # APLICAR FILTROS
@@ -423,9 +460,10 @@ if not filtered.empty:
     with chart_col4:
         st.markdown("#### 💎 Preço vs Área")
         scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
+        trendline_mode = "ols" if HAS_STATSMODELS else None
         fig_scatter = px.scatter(
             scatter_df, x='Área (m²)', y='Preço', color='Tipo',
-            size='Preço/m²', size_max=15, opacity=0.7, trendline="ols",
+            size='Preço/m²', size_max=15, opacity=0.7, trendline=trendline_mode,
             color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
             labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
             hover_data=[COL_BAIRRO, 'Quartos']
@@ -552,7 +590,7 @@ else:
         'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
         'Preço/m² (R$)': brl_fmt,
         'IBairro': lambda x: f"{x:.2f}" if x > 0 else "N/A"
-    }).applymap(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
+    }).map(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
     
     st.dataframe(
         styler,

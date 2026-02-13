@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent / System files
+.agent/
+.system_generated/
+.gemini/
+*.log
+
+# Scraper (não necessário na cloud)
+quintoandar_scraper.py

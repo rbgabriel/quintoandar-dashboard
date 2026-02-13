@@ -144,11 +144,12 @@ def load_data(file_path, _file_mtime):
     return df
 
 def format_brl(value):
-    if value >= 1_000_000:
-        return f"R$ {value/1_000_000:.1f}M"
-    elif value >= 1_000:
-        return f"R$ {value/1_000:.0f}k"
-    return f"R$ {value:.0f}"
+    """Formata valor em BRL com separador de milhares e R$ prefix"""
+    if pd.isna(value) or value == 0:
+        return "R$ 0"
+    # Formata número completo com separador de milhares (ponto)
+    formatted = f"{int(value):,}".replace(",", ".")
+    return f"R$ {formatted}"
 
 # ============================================================
 # HEADER

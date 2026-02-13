@@ -402,6 +402,8 @@ display_cols = [
     'ID Imóvel', COL_BAIRRO, 'Tipo', 'Preço', 'Condomínio',
     'Área (m²)', 'Preço/m²', 'Quartos', 'Endereço', 'Link', 'Data e Hora da Extração'
 ]
+display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
+
 # Renomear colunas para exibição final (garante cabeçalho correto)
 display_df = display_df.rename(columns={
     'Preço': 'Preço (R$)',

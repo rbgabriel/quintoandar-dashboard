@@ -97,7 +97,7 @@ def criar_mapa_calor(df):
             scope='south america',
             projection_type='mercator',
             center=dict(lat=-23.55, lon=-46.65),
-            zoom=10.5,
+            fitbounds='locations',
             showland=True,
             landcolor='rgba(50, 50, 50, 0.2)',
             showocean=True,

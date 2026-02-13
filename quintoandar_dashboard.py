@@ -350,17 +350,8 @@ display_cols = [
 ]
 display_df = filtered[[c for c in display_cols if c in filtered.columns]].copy()
 
-# Formatar números com separador de milhares (padrão brasileiro)
-def fmt_brl(v):
-    return f"R$ {int(v):,}".replace(',', '.') if v > 0 else "N/A"
-
-def fmt_num(v):
-    return f"{int(v):,}".replace(',', '.') if v > 0 else "0"
-
-display_df['Preço'] = display_df['Preço'].apply(fmt_brl)
-display_df['Condomínio'] = display_df['Condomínio'].apply(fmt_brl)
-display_df['Preço/m²'] = display_df['Preço/m²'].apply(fmt_brl)
-display_df['Área (m²)'] = display_df['Área (m²)'].apply(lambda x: f"{fmt_num(x)} m²")
+# Formatação via column_config para manter a ordenação numérica correta
+# (Streamlit 1.30+ ordena com base no tipo de dado)
 
 st.dataframe(
     display_df,
@@ -368,15 +359,15 @@ st.dataframe(
     height=500,
     column_config={
         "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-        "Preço": st.column_config.TextColumn("💰 Preço"),
-        "Condomínio": st.column_config.TextColumn("🏢 Condo"),
-        "Área (m²)": st.column_config.TextColumn("📐 Área"),
+        "Preço": st.column_config.NumberColumn("💰 Preço", format="R$ %.0f"),
+        "Condomínio": st.column_config.NumberColumn("🏢 Condo", format="R$ %.0f"),
+        "Área (m²)": st.column_config.NumberColumn("📐 Área", format="%d m²"),
         "Quartos": st.column_config.NumberColumn("🛏️ Quartos"),
         COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
         "Tipo": st.column_config.TextColumn("🏠 Tipo"),
         "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
         "Endereço": st.column_config.TextColumn("📍 Endereço"),
-        "Preço/m²": st.column_config.TextColumn("💲 R$/m²"),
+        "Preço/m²": st.column_config.NumberColumn("💲 R$/m²", format="R$ %.0f"),
         "Data e Hora da Extração": st.column_config.TextColumn("📅 Captura"),
     },
     hide_index=True

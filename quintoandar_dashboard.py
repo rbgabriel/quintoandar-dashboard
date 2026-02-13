@@ -15,67 +15,120 @@ st.set_page_config(
 )
 
 # ============================================================
-# CSS CUSTOMIZADO
+# TEMA E CSS
 # ============================================================
-st.markdown("""
+with st.sidebar:
+    st.markdown("## ⚙️ Configuração")
+    light_mode = st.toggle("☀️ Modo Claro", value=False)
+    st.markdown("---")
+
+# Definição de cores baseada no modo
+if light_mode:
+    # LIGH MODE
+    bg_color = "#F0F2F6"
+    card_bg = "white"
+    card_border = "#E6E9EF"
+    text_color = "#31333F"
+    subtext_color = "#555"
+    sidebar_bg = "#FFFFFF"
+    chart_template = "plotly_white"
+    chart_bg = "rgba(0,0,0,0)"
+    grid_color = "#E6E9EF"
+    title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
+else:
+    # DARK MODE (Default)
+    bg_color = "#0E1117"
+    card_bg = "linear-gradient(135deg, #1A1D24 0%, #252830 100%)"
+    card_border = "#2D3139"
+    text_color = "#FAFAFA"
+    subtext_color = "#8B8D93"
+    sidebar_bg = "#12151A"
+    chart_template = "plotly_dark"
+    chart_bg = "rgba(0,0,0,0)"
+    grid_color = "#2D3139"
+    title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
+
+st.markdown(f"""
 <style>
-    .kpi-card {
-        background: linear-gradient(135deg, #1A1D24 0%, #252830 100%);
-        border: 1px solid #2D3139;
+    /* App Background */
+    [data-testid="stAppViewContainer"] {{
+        background-color: {bg_color};
+        color: {text_color};
+    }}
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg};
+    }}
+    
+    /* KPI Cards */
+    .kpi-card {{
+        background: {card_bg};
+        border: 1px solid {card_border};
         border-radius: 12px;
         padding: 20px 24px;
         text-align: center;
         transition: transform 0.2s, border-color 0.2s;
-    }
-    .kpi-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }}
+    .kpi-card:hover {{
         transform: translateY(-2px);
         border-color: #FF6B35;
-    }
-    .kpi-value {
+    }}
+    .kpi-value {{
         font-size: 2rem;
         font-weight: 700;
         color: #FF6B35;
         margin: 4px 0;
         line-height: 1.2;
-    }
-    .kpi-label {
+    }}
+    .kpi-label {{
         font-size: 0.85rem;
-        color: #8B8D93;
+        color: {subtext_color};
         text-transform: uppercase;
         letter-spacing: 1px;
-    }
-    .kpi-sublabel {
+    }}
+    .kpi-sublabel {{
         font-size: 0.75rem;
-        color: #555;
+        color: {subtext_color};
         margin-top: 4px;
-    }
-    .main-header {
+    }}
+
+    /* Header */
+    .main-header {{
         text-align: center;
         padding: 10px 0 20px;
-    }
-    .main-header h1 {
+    }}
+    .main-header h1 {{
         font-size: 2.2rem;
-        background: linear-gradient(90deg, #FF6B35, #FF9F1C);
+        background: {title_gradient};
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 4px;
-    }
-    .main-header p {
-        color: #8B8D93;
+    }}
+    .main-header p {{
+        color: {subtext_color};
         font-size: 0.95rem;
-    }
-    [data-testid="stSidebar"] { background: #12151A; }
-    [data-testid="stSidebar"] h2 { color: #FF6B35; font-size: 1.1rem; }
-    .stPlotlyChart, .stDataFrame {
-        border: 1px solid #2D3139;
+    }}
+
+    /* Sidebar headers */
+    [data-testid="stSidebar"] h2 {{
+        color: #FF6B35;
+        font-size: 1.1rem;
+    }}
+
+    /* Charts & DataFrame containers */
+    .stPlotlyChart, .stDataFrame {{
+        border: 1px solid {card_border};
         border-radius: 12px;
         overflow: hidden;
-    }
-    .section-divider {
+        background-color: {card_bg if 'gradient' not in card_bg else 'transparent'};
+    }}
+    
+    /* Divider */
+    .section-divider {{
         border: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, #2D3139, transparent);
+        background: linear-gradient(90deg, transparent, {grid_color}, transparent);
         margin: 24px 0;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -268,11 +321,12 @@ st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 # GRÁFICOS
 # ============================================================
 chart_layout = dict(
+    template=chart_template,
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(color='#FAFAFA', family='Inter, sans-serif'),
+    font=dict(color=text_color, family='Inter, sans-serif'),
     margin=dict(l=40, r=20, t=50, b=40),
-    hoverlabel=dict(bgcolor='#1A1D24', font_color='#FAFAFA'),
+    hoverlabel=dict(bgcolor=sidebar_bg, font_color=text_color),
 )
 
 if not filtered.empty:
@@ -285,9 +339,9 @@ if not filtered.empty:
             color_discrete_sequence=['#FF6B35'],
             labels={'Preço': 'Preço (R$)', 'count': 'Quantidade'}
         )
-        fig_hist.update_layout(**chart_layout, showlegend=False,
-            xaxis=dict(gridcolor='#2D3139', tickformat=',.0f'),
-            yaxis=dict(gridcolor='#2D3139', title='Quantidade'))
+        fig_hist.update_layout(**chart_layout, showlegend=False)
+        fig_hist.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
+        fig_hist.update_yaxes(gridcolor=grid_color, title='Quantidade')
         st.plotly_chart(fig_hist, width="stretch")
     
     with chart_col2:
@@ -299,9 +353,9 @@ if not filtered.empty:
             color='Preço/m²', color_continuous_scale=['#FF6B35', '#FF9F1C', '#FFD166'],
             labels={'Preço/m²': 'R$/m²', COL_BAIRRO: ''}
         )
-        fig_bar.update_layout(**chart_layout, showlegend=False, coloraxis_showscale=False,
-            xaxis=dict(gridcolor='#2D3139', tickformat=',.0f'),
-            yaxis=dict(gridcolor='#2D3139'))
+        fig_bar.update_layout(**chart_layout, showlegend=False, coloraxis_showscale=False)
+        fig_bar.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
+        fig_bar.update_yaxes(gridcolor=grid_color)
         st.plotly_chart(fig_bar, width="stretch")
 
     st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
@@ -332,9 +386,9 @@ if not filtered.empty:
             hover_data=[COL_BAIRRO, 'Quartos']
         )
         fig_scatter.update_layout(**chart_layout,
-            xaxis=dict(gridcolor='#2D3139'),
-            yaxis=dict(gridcolor='#2D3139', tickformat=',.0f'),
             legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5))
+        fig_scatter.update_xaxes(gridcolor=grid_color)
+        fig_scatter.update_yaxes(gridcolor=grid_color, tickformat=',.0f')
         st.plotly_chart(fig_scatter, width="stretch")
 
 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)

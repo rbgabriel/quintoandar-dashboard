@@ -137,11 +137,12 @@ st.markdown(f"""
 # ============================================================
 DATA_PATH = os.path.join("base", "quintoandar_database.xlsx")
 
-@st.cache_data
-def load_data():
-    if not os.path.exists(DATA_PATH):
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def load_data(file_path, _file_mtime):
+    """Load data with cache invalidation based on file modification time"""
+    if not os.path.exists(file_path):
         return None
-    df = pd.read_excel(DATA_PATH, dtype={'ID Imóvel': str})
+    df = pd.read_excel(file_path, dtype={'ID Imóvel': str})
 
     # Garantir tipos numéricos
     for col in ['Preço', 'Condomínio', 'Preço/m²']:
@@ -175,7 +176,9 @@ st.markdown("""
 # ============================================================
 # LOAD DATA
 # ============================================================
-df_raw = load_data()
+# Cache-busting: use file modification time to invalidate cache when data updates
+file_mtime = os.path.getmtime(DATA_PATH) if os.path.exists(DATA_PATH) else 0
+df_raw = load_data(DATA_PATH, file_mtime)
 
 if df_raw is None or df_raw.empty:
     st.error("❌ Nenhum dado encontrado. Execute o scraper primeiro: `python quintoandar_scraper.py`")

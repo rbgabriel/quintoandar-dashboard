@@ -25,3 +25,18 @@ Thumbs.db
 
 # Scraper (não necessário na cloud)
 quintoandar_scraper.py
+probe_quintoandar.py
+migrate_database.py
+
+# Old/temp data files
+quintoandar_imoveis*.xlsx
+base/*_OLD_BACKUP.xlsx
+
+# Metadata and task files
+*.metadata.json
+*.resolved
+*.resolved.*
+task.md
+walkthrough.md
+implementation_plan.md
+*.webp

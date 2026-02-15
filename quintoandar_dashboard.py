@@ -561,29 +561,47 @@ with tab1:
     
     # Para grandes datasets (>1000 linhas), usar formatação simples
     # Para pequenos datasets, usar Styler com formatação avançada
-    # Configuração de colunas para garantir ordenação numérica
+    # Configuração de colunas para garantir ordenação numérica (sem format string que força vírgula)
     column_config = {
         "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
         "Captura": st.column_config.TextColumn("📅 Captura"),
         "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
         COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-        "Preço (R$)": st.column_config.NumberColumn("Preço", format="R$ %,.0f"),
-        "Condomínio (R$)": st.column_config.NumberColumn("Condo", format="R$ %,.0f"),
-        "Preço/m² (R$)": st.column_config.NumberColumn("R$/m²", format="R$ %,.2f"),
-        "Área (m²)": st.column_config.NumberColumn("Área", format="%,.0f m²"),
-        "IBairro": st.column_config.NumberColumn("IBairro", format="%.2f"),
+        "Preço (R$)": st.column_config.NumberColumn("Preço"),
+        "Condomínio (R$)": st.column_config.NumberColumn("Condo"),
+        "Preço/m² (R$)": st.column_config.NumberColumn("R$/m²"),
+        "Área (m²)": st.column_config.NumberColumn("Área"),
+        "IBairro": st.column_config.NumberColumn("IBairro"),
     }
 
-    # Usar Styler apenas para cores se o dataset for pequeno, mas mantendo tipos numéricos
-    if len(display_df) <= 1000:
-        def highlight_ibairro(val):
-            if pd.isna(val) or val == 0: return ''
-            return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0' if val < 1 else 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'
+    # Formatadores BR (ponto para milhar)
+    def fmt_br_val(x): 
+        try: return f"R$ {int(x):,}".replace(",", ".")
+        except: return str(x)
+    
+    def fmt_br_pm2(x):
+        try: return f"R$ {float(x):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except: return str(x)
         
-        styler = display_df.style.map(highlight_ibairro, subset=['IBairro'])
-        st.dataframe(styler, width="stretch", height=500, column_config=column_config, hide_index=True)
-    else:
-        st.dataframe(display_df, width="stretch", height=500, column_config=column_config, hide_index=True)
+    def fmt_br_area(x):
+        try: return f"{int(x):,}".replace(",", ".") + " m²"
+        except: return str(x)
+
+    def highlight_ibairro(val):
+        if pd.isna(val) or val == 0: return ''
+        return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0' if val < 1 else 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'
+
+    # SEMPRE usar Styler para garantir a formatação visual (milhar com ponto)
+    # Streamlit dataframe preserva ordenação numérica se o DF original for numérico, mesmo com Styler
+    styler = display_df.style.format({
+        "Preço (R$)": fmt_br_val,
+        "Condomínio (R$)": fmt_br_val,
+        "Preço/m² (R$)": fmt_br_pm2,
+        "Área (m²)": fmt_br_area,
+        "IBairro": "{:.2f}"
+    }).map(highlight_ibairro, subset=['IBairro'])
+    
+    st.dataframe(styler, width="stretch", height=500, column_config=column_config, hide_index=True)
     
     unique_count = filtered['ID Imóvel'].nunique() if not filtered.empty else 0
     st.caption(f"Exibindo {len(filtered)} registros ({unique_count} imóveis únicos) | Última atualização: {df_raw['Data e Hora da Extração'].max()}")

@@ -218,6 +218,14 @@ def update_area_inputs():
 # ============================================================
 with st.sidebar:
     st.markdown("## 🔍 Filtros")
+
+    # Toggle: ver todos os registros ou apenas os mais recentes
+    show_all = st.toggle("📜 Mostrar série temporal completa", value=False, key="show_all",
+                          help="Ativado: mostra TODOS os registros (mesmo imóvel repetido ao longo do tempo). Desativado: mostra apenas a captura mais recente de cada imóvel.")
+    
+    df = df_raw if show_all else df_latest
+    
+    st.markdown("---")
     
     # Cidade
     cidades = sorted(df[COL_CIDADE].dropna().unique().tolist()) if COL_CIDADE in df.columns else []
@@ -251,14 +259,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Toggle: ver todos os registros ou apenas os mais recentes
-    show_all = st.toggle("📜 Mostrar série temporal completa", value=False, key="show_all",
-                          help="Ativado: mostra TODOS os registros (mesmo imóvel repetido ao longo do tempo). Desativado: mostra apenas a captura mais recente de cada imóvel.")
-    
-    df = df_raw if show_all else df_latest
-    
-    st.markdown("---")
-    
+
     # Bairro (com busca)
     bairros = sorted(df[COL_BAIRRO].dropna().unique().tolist())
     bairro_search = st.text_input("🔎 Buscar bairro", placeholder="Digite para filtrar...", key="bairro_search")

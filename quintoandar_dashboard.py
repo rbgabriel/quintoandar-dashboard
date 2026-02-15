@@ -197,6 +197,23 @@ default_area_max = int(df_default['Área (m²)'].max())
 default_quartos = sorted(df_default['Quartos'].unique().tolist())
 
 # ============================================================
+# INITIALIZE SESSION STATE
+# ============================================================
+if 'sel_price' not in st.session_state:
+    st.session_state.sel_price = (default_price_min, default_price_max)
+if 'price_input_min' not in st.session_state:
+    st.session_state.price_input_min = default_price_min
+if 'price_input_max' not in st.session_state:
+    st.session_state.price_input_max = default_price_max
+if 'sel_area' not in st.session_state:
+    st.session_state.sel_area = (default_area_min, default_area_max)
+if 'area_input_min' not in st.session_state:
+    st.session_state.area_input_min = default_area_min
+if 'area_input_max' not in st.session_state:
+    st.session_state.area_input_max = default_area_max
+
+
+# ============================================================
 
 # Price Sync functions
 def update_price_slider():

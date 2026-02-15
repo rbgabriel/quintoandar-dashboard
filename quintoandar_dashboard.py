@@ -187,6 +187,7 @@ df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subs
 # DEFAULTS — RESET DE FILTROS
 # ============================================================
 df_default = df_latest if not df_latest.empty else df_raw
+default_cidades = sorted(df_default[COL_CIDADE].dropna().unique().tolist()) if COL_CIDADE in df_default.columns else []
 default_bairros = sorted(df_default[COL_BAIRRO].dropna().unique().tolist())
 default_tipos = sorted(df_default['Tipo'].dropna().unique().tolist())
 default_price_min = int(df_default['Preço'].min())
@@ -196,10 +197,35 @@ default_area_max = int(df_default['Área (m²)'].max())
 default_quartos = sorted(df_default['Quartos'].unique().tolist())
 
 # ============================================================
+
+    # Price Sync functions
+    def update_price_slider():
+        st.session_state.sel_price = (st.session_state.price_input_min, st.session_state.price_input_max)
+    
+    def update_price_inputs():
+        st.session_state.price_input_min = st.session_state.sel_price[0]
+        st.session_state.price_input_max = st.session_state.sel_price[1]
+
+    # Area Sync functions
+    def update_area_slider():
+        st.session_state.sel_area = (st.session_state.area_input_min, st.session_state.area_input_max)
+    
+    def update_area_inputs():
+        st.session_state.area_input_min = st.session_state.sel_area[0]
+        st.session_state.area_input_max = st.session_state.sel_area[1]
+
 # SIDEBAR — FILTROS
 # ============================================================
 with st.sidebar:
     st.markdown("## 🔍 Filtros")
+    
+    # Cidade
+    cidades = sorted(df[COL_CIDADE].dropna().unique().tolist()) if COL_CIDADE in df.columns else []
+    if cidades:
+        sel_cidades = st.multiselect("Cidade", cidades, default=cidades, key="sel_cidades")
+        st.markdown("---")
+    else:
+        sel_cidades = []
     
     # Reset button at top - always visible
     col_reset_top = st.columns(1)[0]
@@ -208,6 +234,8 @@ with st.sidebar:
             # Reset all filter-related session state keys to defaults
             st.session_state.update({
                 "show_all": False,
+                "cidade_search": "",
+                "sel_cidades": default_cidades,
                 "bairro_search": "",
                 "sel_bairros": default_bairros,
                 "sel_tipos": default_tipos,
@@ -252,14 +280,15 @@ with st.sidebar:
     if price_max > price_min:
         col_price1, col_price2 = st.columns(2)
         with col_price1:
-            price_input_min = st.number_input("Preço Min (R$)", value=price_min, min_value=price_min, max_value=price_max, step=10000, key="price_input_min")
+            st.number_input("Preço Min (R$)", value=price_min, min_value=price_min, max_value=price_max, step=10000, key="price_input_min", on_change=update_price_slider)
         with col_price2:
-            price_input_max = st.number_input("Preço Max (R$)", value=price_max, min_value=price_min, max_value=price_max, step=10000, key="price_input_max")
-        sel_price = st.slider(
+            st.number_input("Preço Max (R$)", value=price_max, min_value=price_min, max_value=price_max, step=10000, key="price_input_max", on_change=update_price_slider)
+        st.slider(
             "Ajuste com slider:",
             min_value=price_min, max_value=price_max,
-            value=(price_input_min, price_input_max), step=10000, format="R$ %d", key="sel_price"
+            key="sel_price", step=10000, format="R$ %d", on_change=update_price_inputs
         )
+        sel_price = st.session_state.sel_price
     else:
         sel_price = (price_min, price_max)
     
@@ -270,10 +299,11 @@ with st.sidebar:
     if area_max > area_min:
         col_area1, col_area2 = st.columns(2)
         with col_area1:
-            area_input_min = st.number_input("Área Min (m²)", value=area_min, min_value=area_min, max_value=area_max, step=5, key="area_input_min")
+            st.number_input("Área Min (m²)", value=area_min, min_value=area_min, max_value=area_max, step=5, key="area_input_min", on_change=update_area_slider)
         with col_area2:
-            area_input_max = st.number_input("Área Max (m²)", value=area_max, min_value=area_min, max_value=area_max, step=5, key="area_input_max")
-        sel_area = st.slider("Ajuste com slider:", min_value=area_min, max_value=area_max, value=(area_input_min, area_input_max), step=5, key="sel_area")
+            st.number_input("Área Max (m²)", value=area_max, min_value=area_min, max_value=area_max, step=5, key="area_input_max", on_change=update_area_slider)
+        st.slider("Ajuste com slider:", min_value=area_min, max_value=area_max, key="sel_area", step=5, on_change=update_area_inputs)
+        sel_area = st.session_state.sel_area
     else:
         sel_area = (area_min, area_max)
     
@@ -292,9 +322,12 @@ with st.sidebar:
 # ============================================================
 # APLICAR FILTROS
 # ============================================================
-filtered = df[
-    (df[COL_BAIRRO].isin(sel_bairros)) &
-    (df['Tipo'].isin(sel_tipos)) &
+# Base filter for cities
+df_filtered_city = df[df[COL_CIDADE].isin(sel_cidades)] if (COL_CIDADE in df.columns and sel_cidades) else df
+
+filtered = df_filtered_city[
+    (df_filtered_city[COL_BAIRRO].isin(sel_bairros)) &
+    (df_filtered_city['Tipo'].isin(sel_tipos)) &
     (df['Preço'].between(sel_price[0], sel_price[1])) &
     (df['Área (m²)'].between(sel_area[0], sel_area[1])) &
     (df['Quartos'].isin(sel_quartos))
@@ -510,58 +543,29 @@ with tab1:
     
     # Para grandes datasets (>1000 linhas), usar formatação simples
     # Para pequenos datasets, usar Styler com formatação avançada
-    if len(display_df) > 1000:
-        # Formatação simples para grandes datasets
-        display_df_fmt = display_df.copy()
-        for col in ['Preço (R$)', 'Condomínio (R$)', 'Preço/m² (R$)']:
-            if col in display_df_fmt.columns:
-                display_df_fmt[col] = display_df_fmt[col].apply(lambda x: brl_fmt(x) if pd.notna(x) else "N/A")
-        if 'Área (m²)' in display_df_fmt.columns:
-            display_df_fmt['Área (m²)'] = display_df_fmt['Área (m²)'].apply(lambda x: f"{int(x):,} m²".replace(",", ".") if pd.notna(x) else "N/A")
-        
-        st.dataframe(
-            display_df_fmt,
-            width="stretch",
-            height=500,
-            column_config={
-                "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-                "Captura": st.column_config.TextColumn("📅 Captura"),
-                "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-                COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-            },
-            hide_index=True
-        )
-    else:
-        # Usar Styler para pequenos datasets
+    # Configuração de colunas para garantir ordenação numérica
+    column_config = {
+        "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
+        "Captura": st.column_config.TextColumn("📅 Captura"),
+        "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
+        COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
+        "Preço (R$)": st.column_config.NumberColumn("Preço", format="R$ %,.0f"),
+        "Condomínio (R$)": st.column_config.NumberColumn("Condo", format="R$ %,.0f"),
+        "Preço/m² (R$)": st.column_config.NumberColumn("R$/m²", format="R$ %,.2f"),
+        "Área (m²)": st.column_config.NumberColumn("Área", format="%,.0f m²"),
+        "IBairro": st.column_config.NumberColumn("IBairro", format="%.2f"),
+    }
+
+    # Usar Styler apenas para cores se o dataset for pequeno, mas mantendo tipos numéricos
+    if len(display_df) <= 1000:
         def highlight_ibairro(val):
-            """Colorir IBairro: verde se < 1, vermelho se >= 1"""
-            if pd.isna(val) or val == 0:
-                return ''
-            elif val < 1:
-                return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0'  # Verde
-            else:
-                return 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'  # Vermelho
+            if pd.isna(val) or val == 0: return ''
+            return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0' if val < 1 else 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'
         
-        styler = display_df.style.format({
-            'Preço (R$)': brl_fmt,
-            'Condomínio (R$)': brl_fmt,
-            'Área (m²)': lambda x: f"{int(x):,} m²".replace(",", "."),
-            'Preço/m² (R$)': brl_fmt,
-            'IBairro': lambda x: f"{x:.2f}" if x > 0 else "N/A"
-        }).map(lambda val: highlight_ibairro(val) if True else '', subset=['IBairro'])
-        
-        st.dataframe(
-            styler,
-            width="stretch",
-            height=500,
-            column_config={
-                "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
-                "Captura": st.column_config.TextColumn("📅 Captura"),
-                "ID Imóvel": st.column_config.TextColumn("🆔 ID"),
-                COL_BAIRRO: st.column_config.TextColumn("📍 Bairro"),
-            },
-            hide_index=True
-        )
+        styler = display_df.style.map(highlight_ibairro, subset=['IBairro'])
+        st.dataframe(styler, width="stretch", height=500, column_config=column_config, hide_index=True)
+    else:
+        st.dataframe(display_df, width="stretch", height=500, column_config=column_config, hide_index=True)
     
     unique_count = filtered['ID Imóvel'].nunique() if not filtered.empty else 0
     st.caption(f"Exibindo {len(filtered)} registros ({unique_count} imóveis únicos) | Última atualização: {df_raw['Data e Hora da Extração'].max()}")

@@ -198,21 +198,21 @@ default_quartos = sorted(df_default['Quartos'].unique().tolist())
 
 # ============================================================
 
-    # Price Sync functions
-    def update_price_slider():
-        st.session_state.sel_price = (st.session_state.price_input_min, st.session_state.price_input_max)
-    
-    def update_price_inputs():
-        st.session_state.price_input_min = st.session_state.sel_price[0]
-        st.session_state.price_input_max = st.session_state.sel_price[1]
+# Price Sync functions
+def update_price_slider():
+    st.session_state.sel_price = (st.session_state.price_input_min, st.session_state.price_input_max)
 
-    # Area Sync functions
-    def update_area_slider():
-        st.session_state.sel_area = (st.session_state.area_input_min, st.session_state.area_input_max)
-    
-    def update_area_inputs():
-        st.session_state.area_input_min = st.session_state.sel_area[0]
-        st.session_state.area_input_max = st.session_state.sel_area[1]
+def update_price_inputs():
+    st.session_state.price_input_min = st.session_state.sel_price[0]
+    st.session_state.price_input_max = st.session_state.sel_price[1]
+
+# Area Sync functions
+def update_area_slider():
+    st.session_state.sel_area = (st.session_state.area_input_min, st.session_state.area_input_max)
+
+def update_area_inputs():
+    st.session_state.area_input_min = st.session_state.sel_area[0]
+    st.session_state.area_input_max = st.session_state.sel_area[1]
 
 # SIDEBAR — FILTROS
 # ============================================================

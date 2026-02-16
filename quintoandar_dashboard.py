@@ -167,7 +167,7 @@ with st.sidebar:
         sel_area = (area_min, area_max)
     
     # Quartos
-    quartos_opts = sorted(df['Quartos'].unique().tolist())
+    quartos_opts = sorted(df['Quartos'].dropna().unique().tolist())
     sel_quartos = st.multiselect("Quartos", quartos_opts, default=quartos_opts, key="sel_quartos")
 
     st.markdown("---")
@@ -331,8 +331,8 @@ with tab1:
         st.markdown("#### ⚖️ Comparar Bairros")
         target_bairros = st.multiselect(
             "Selecione para comparar:",
-            options=sorted(df[COL_BAIRRO].unique()),
-            default=sorted(filtered[COL_BAIRRO].unique())[:2] if not filtered.empty else [],
+            options=sorted(df[COL_BAIRRO].dropna().unique()),
+            default=sorted(filtered[COL_BAIRRO].dropna().unique())[:2] if not filtered.empty else [],
             max_selections=4,
             key="comp_bairros"
         )

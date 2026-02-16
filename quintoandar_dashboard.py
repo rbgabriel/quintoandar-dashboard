@@ -75,6 +75,17 @@ COL_CIDADE = 'Cidade' if 'Cidade' in df_raw.columns else 'Cidade de Busca'
 # Por padrão, exibir apenas o registro mais recente de cada imóvel
 df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subset=['ID Imóvel'], keep='last')
 
+# Calculate defaults for filters
+df_default = df_latest
+default_cidades = sorted(df_default[COL_CIDADE].dropna().unique().tolist()) if COL_CIDADE in df_default.columns else []
+default_bairros = sorted(df_default[COL_BAIRRO].dropna().unique().tolist()) if COL_BAIRRO in df_default.columns else []
+default_tipos = sorted(df_default['Tipo'].dropna().unique().tolist()) if 'Tipo' in df_default.columns else []
+default_price_min = int(df_default['Preço'].min()) if not df_default.empty else 0
+default_price_max = int(df_default['Preço'].max()) if not df_default.empty else 1000000
+default_area_min = int(df_default['Área (m²)'].min()) if not df_default.empty else 0
+default_area_max = int(df_default['Área (m²)'].max()) if not df_default.empty else 1000
+default_quartos = sorted(df_default['Quartos'].dropna().unique().tolist()) if 'Quartos' in df_default.columns else []
+
 # Initialize session state for filters
 init_filter_session_state(df_default, default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
 
@@ -166,6 +177,9 @@ with st.sidebar:
     if st.button("🔄 Recarregar Dados", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
+
+    if st.button("🗑️ Limpar Filtros", use_container_width=True):
+        reset_filters(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
 
 # ============================================================
 # APLICAR FILTROS
@@ -268,6 +282,21 @@ with tab1:
             fig_donut.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
             st.plotly_chart(fig_donut, width="stretch")
         
+        with chart_col4:
+            st.markdown("#### 💎 Preço vs Área")
+            scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
+            trendline_mode = "ols" if HAS_STATSMODELS else None
+            fig_scatter = px.scatter(
+                scatter_df, x='Área (m²)', y='Preço', color='Tipo',
+                size='Preço/m²', size_max=15, opacity=0.7, trendline=trendline_mode,
+                color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
+                labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
+                hover_data=[COL_BAIRRO, 'Quartos']
+            )
+            fig_scatter.update_layout(**chart_layout,
+                legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5))
+            fig_scatter.update_xaxes(gridcolor=GRID_COLOR)
+            fig_scatter.update_yaxes(gridcolor=GRID_COLOR, tickformat=',.0f')
             st.plotly_chart(fig_scatter, width="stretch")
     
     # ============================================================

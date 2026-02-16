@@ -5,120 +5,19 @@ import plotly.graph_objects as go
 import os
 from mapa_calor import criar_mapa_calor, criar_tabela_bairros
 
+# New modules
+from utils.formatting import format_brl, fmt_br_currency, fmt_br_pm2, fmt_br_area
+from dashboard.ui_components import *
+from dashboard.filters import init_filter_session_state, update_price_slider, update_price_inputs, update_area_slider, update_area_inputs, reset_filters
+
 try:
     import statsmodels.api as sm
     HAS_STATSMODELS = True
 except Exception:
     HAS_STATSMODELS = False
 
-# ============================================================
-# CONFIGURAÇÃO DA PÁGINA
-# ============================================================
-st.set_page_config(
-    page_title="QuintoAndar Dashboard",
-    page_icon="🏠",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# ============================================================
-# TEMA E CSS
-# ============================================================
-# DARK MODE (Default)
-bg_color = "#0E1117"
-card_bg = "linear-gradient(135deg, #1A1D24 0%, #252830 100%)"
-card_border = "#2D3139"
-text_color = "#FAFAFA"
-subtext_color = "#8B8D93"
-sidebar_bg = "#12151A"
-chart_template = "plotly_dark"
-chart_bg = "rgba(0,0,0,0)"
-grid_color = "#2D3139"
-title_gradient = "linear-gradient(90deg, #FF6B35, #FF9F1C)"
-
-st.markdown(f"""
-<style>
-    /* App Background */
-    [data-testid="stAppViewContainer"] {{
-        background-color: {bg_color};
-        color: {text_color};
-    }}
-    [data-testid="stSidebar"] {{
-        background-color: {sidebar_bg};
-    }}
-    
-    /* KPI Cards */
-    .kpi-card {{
-        background: {card_bg};
-        border: 1px solid {card_border};
-        border-radius: 12px;
-        padding: 20px 24px;
-        text-align: center;
-        transition: transform 0.2s, border-color 0.2s;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-    }}
-    .kpi-card:hover {{
-        transform: translateY(-2px);
-        border-color: #FF6B35;
-    }}
-    .kpi-value {{
-        font-size: 2rem;
-        font-weight: 700;
-        color: #FF6B35;
-        margin: 4px 0;
-        line-height: 1.2;
-    }}
-    .kpi-label {{
-        font-size: 0.85rem;
-        color: {subtext_color};
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }}
-    .kpi-sublabel {{
-        font-size: 0.75rem;
-        color: {subtext_color};
-        margin-top: 4px;
-    }}
-
-    /* Header */
-    .main-header {{
-        text-align: center;
-        padding: 10px 0 20px;
-    }}
-    .main-header h1 {{
-        font-size: 2.2rem;
-        background: {title_gradient};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 4px;
-    }}
-    .main-header p {{
-        color: {subtext_color};
-        font-size: 0.95rem;
-    }}
-
-    /* Sidebar headers */
-    [data-testid="stSidebar"] h2 {{
-        color: #FF6B35;
-        font-size: 1.1rem;
-    }}
-
-    /* Charts & DataFrame containers */
-    .stPlotlyChart, .stDataFrame {{
-        border: 1px solid {card_border};
-        border-radius: 12px;
-        overflow: hidden;
-        background-color: {card_bg if 'gradient' not in card_bg else 'transparent'};
-    }}
-    
-    /* Divider */
-    .section-divider {{
-        border: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, {grid_color}, transparent);
-        margin: 24px 0;
-    }}
-</style>
-""", unsafe_allow_html=True)
+# Apply custom styles from ui_components
+apply_custom_css()
 
 # ============================================================
 # CARREGAMENTO DE DADOS
@@ -144,23 +43,16 @@ def load_data(file_path, _file_mtime):
     
     return df
 
-def format_brl(value):
-    """Formata valor em BRL com separador de milhares e R$ prefix"""
-    if pd.isna(value) or value == 0:
-        return "R$ 0"
-    # Formata número completo com separador de milhares (ponto)
-    formatted = f"{int(value):,}".replace(",", ".")
-    return f"R$ {formatted}"
-
 # ============================================================
-# HEADER
+# PAGE CONFIG & HEADER
 # ============================================================
-st.markdown("""
-<div class="main-header">
-    <h1>🏠 QuintoAndar Dashboard v3.1</h1>
-    <p>Análise interativa dos imóveis coletados</p>
-</div>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="QuintoAndar Dashboard",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+render_header(version="3.1")
 
 # ============================================================
 # LOAD DATA
@@ -183,53 +75,8 @@ COL_CIDADE = 'Cidade' if 'Cidade' in df_raw.columns else 'Cidade de Busca'
 # Por padrão, exibir apenas o registro mais recente de cada imóvel
 df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subset=['ID Imóvel'], keep='last')
 
-# ============================================================
-# DEFAULTS — RESET DE FILTROS
-# ============================================================
-df_default = df_latest if not df_latest.empty else df_raw
-default_cidades = sorted(df_default[COL_CIDADE].dropna().unique().tolist()) if COL_CIDADE in df_default.columns else []
-default_bairros = sorted(df_default[COL_BAIRRO].dropna().unique().tolist())
-default_tipos = sorted(df_default['Tipo'].dropna().unique().tolist())
-default_price_min = int(df_default['Preço'].min())
-default_price_max = int(df_default['Preço'].max())
-default_area_min = int(df_default['Área (m²)'].min())
-default_area_max = int(df_default['Área (m²)'].max())
-default_quartos = sorted(df_default['Quartos'].unique().tolist())
-
-# ============================================================
-# INITIALIZE SESSION STATE
-# ============================================================
-if 'sel_price' not in st.session_state:
-    st.session_state.sel_price = (default_price_min, default_price_max)
-if 'price_input_min' not in st.session_state:
-    st.session_state.price_input_min = default_price_min
-if 'price_input_max' not in st.session_state:
-    st.session_state.price_input_max = default_price_max
-if 'sel_area' not in st.session_state:
-    st.session_state.sel_area = (default_area_min, default_area_max)
-if 'area_input_min' not in st.session_state:
-    st.session_state.area_input_min = default_area_min
-if 'area_input_max' not in st.session_state:
-    st.session_state.area_input_max = default_area_max
-
-
-# ============================================================
-
-# Price Sync functions
-def update_price_slider():
-    st.session_state.sel_price = (st.session_state.price_input_min, st.session_state.price_input_max)
-
-def update_price_inputs():
-    st.session_state.price_input_min = st.session_state.sel_price[0]
-    st.session_state.price_input_max = st.session_state.sel_price[1]
-
-# Area Sync functions
-def update_area_slider():
-    st.session_state.sel_area = (st.session_state.area_input_min, st.session_state.area_input_max)
-
-def update_area_inputs():
-    st.session_state.area_input_min = st.session_state.sel_area[0]
-    st.session_state.area_input_max = st.session_state.sel_area[1]
+# Initialize session state for filters
+init_filter_session_state(df_default, default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
 
 # SIDEBAR — FILTROS
 # ============================================================
@@ -252,27 +99,10 @@ with st.sidebar:
     else:
         sel_cidades = []
     
-    # Reset button at top - always visible
     col_reset_top = st.columns(1)[0]
     with col_reset_top:
         if st.button("🔁 Reset Filtros", use_container_width=True, key="reset_top"):
-            # Reset all filter-related session state keys to defaults
-            st.session_state.update({
-                "show_all": False,
-                "cidade_search": "",
-                "sel_cidades": default_cidades,
-                "bairro_search": "",
-                "sel_bairros": default_bairros,
-                "sel_tipos": default_tipos,
-                "price_input_min": default_price_min,
-                "price_input_max": default_price_max,
-                "sel_price": (default_price_min, default_price_max),
-                "area_input_min": default_area_min,
-                "area_input_max": default_area_max,
-                "sel_area": (default_area_min, default_area_max),
-                "sel_quartos": default_quartos,
-            })
-            st.rerun()
+            reset_filters(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
     
     st.markdown("---")
     
@@ -358,75 +188,41 @@ tab1, tab2 = st.tabs(['📊 Dashboard', '🗺️ Mapa de Calor'])
 
 # ============ ABA 1: DASHBOARD ============
 with tab1:
-    # ============================================================
-    # KPIs
-    # ============================================================
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Imóveis</div>
-            <div class="kpi-value">{len(filtered):,}</div>
-            <div class="kpi-sublabel">{'registros totais' if show_all else 'únicos'}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_kpi_card("Imóveis", f"{len(filtered):,}", 'registros totais' if show_all else 'únicos')
     
     with col2:
         avg_price = filtered['Preço'].mean() if not filtered.empty else 0
-        st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Preço Médio</div>
-            <div class="kpi-value">{format_brl(avg_price)}</div>
-            <div class="kpi-sublabel">mediana: {format_brl(filtered['Preço'].median()) if not filtered.empty else 'N/A'}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_kpi_card("Preço Médio", format_brl(avg_price), f"mediana: {format_brl(filtered['Preço'].median()) if not filtered.empty else 'N/A'}")
     
     with col3:
         avg_pm2 = filtered['Preço/m²'].mean() if not filtered.empty else 0
-        st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Preço/m² Médio</div>
-            <div class="kpi-value">{format_brl(avg_pm2)}</div>
-            <div class="kpi-sublabel">por metro quadrado</div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_kpi_card("Preço/m² Médio", format_brl(avg_pm2), "por metro quadrado")
     
     with col4:
         avg_area = filtered['Área (m²)'].mean() if not filtered.empty else 0
-        st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Área Média</div>
-            <div class="kpi-value">{avg_area:.0f} m²</div>
-            <div class="kpi-sublabel">média dos filtrados</div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_kpi_card("Área Média", f"{avg_area:.0f} m²", "média dos filtrados")
     
     with col5:
         avg_condo = filtered['Condomínio'].mean() if not filtered.empty else 0
-        st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Condomínio Médio</div>
-            <div class="kpi-value">{format_brl(avg_condo)}</div>
-            <div class="kpi-sublabel">encargos mensais</div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_kpi_card("Condomínio Médio", format_brl(avg_condo), "encargos mensais")
     
+    # 🕒 Freshness Indicator
+    last_update = df_raw['Data e Hora da Extração'].max()
+    st.markdown(f"""
+    <div style="text-align: right; margin-top: -15px; margin-bottom: 5px;">
+        <span style="color: {SUBTEXT_COLOR}; font-size: 0.8rem; background: {CARD_BG}; padding: 4px 12px; border-radius: 20px; border: 1px solid {CARD_BORDER};">
+            ⏱️ Última coleta: {last_update}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
     
-    # ============================================================
-    # GRÁFICOS
-    # ============================================================
-    chart_layout = dict(
-        template=chart_template,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=text_color, family='Inter, sans-serif'),
-        margin=dict(l=40, r=20, t=50, b=40),
-        hoverlabel=dict(bgcolor=sidebar_bg, font_color=text_color),
-    )
-    
     if not filtered.empty:
+        chart_layout = get_chart_layout()
         chart_col1, chart_col2 = st.columns(2)
         
         with chart_col1:
@@ -437,8 +233,8 @@ with tab1:
                 labels={'Preço': 'Preço (R$)', 'count': 'Quantidade'}
             )
             fig_hist.update_layout(**chart_layout, showlegend=False)
-            fig_hist.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
-            fig_hist.update_yaxes(gridcolor=grid_color, title='Quantidade')
+            fig_hist.update_xaxes(gridcolor="#2D3139", tickformat=',.0f')
+            fig_hist.update_yaxes(gridcolor="#2D3139", title='Quantidade')
             st.plotly_chart(fig_hist, width="stretch")
         
         with chart_col2:
@@ -451,8 +247,8 @@ with tab1:
                 labels={'Preço/m²': 'R$/m²', COL_BAIRRO: ''}
             )
             fig_bar.update_layout(**chart_layout, showlegend=False, coloraxis_showscale=False)
-            fig_bar.update_xaxes(gridcolor=grid_color, tickformat=',.0f')
-            fig_bar.update_yaxes(gridcolor=grid_color)
+            fig_bar.update_xaxes(gridcolor=GRID_COLOR, tickformat=',.0f')
+            fig_bar.update_yaxes(gridcolor=GRID_COLOR)
             st.plotly_chart(fig_bar, width="stretch")
     
         st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
@@ -472,22 +268,66 @@ with tab1:
             fig_donut.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
             st.plotly_chart(fig_donut, width="stretch")
         
-        with chart_col4:
-            st.markdown("#### 💎 Preço vs Área")
-            scatter_df = filtered[(filtered['Preço'] > 0) & (filtered['Área (m²)'] > 0)]
-            trendline_mode = "ols" if HAS_STATSMODELS else None
-            fig_scatter = px.scatter(
-                scatter_df, x='Área (m²)', y='Preço', color='Tipo',
-                size='Preço/m²', size_max=15, opacity=0.7, trendline=trendline_mode,
-                color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2'],
-                labels={'Preço': 'Preço (R$)', 'Área (m²)': 'Área (m²)'},
-                hover_data=[COL_BAIRRO, 'Quartos']
-            )
-            fig_scatter.update_layout(**chart_layout,
-                legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5))
-            fig_scatter.update_xaxes(gridcolor=grid_color)
-            fig_scatter.update_yaxes(gridcolor=grid_color, tickformat=',.0f')
             st.plotly_chart(fig_scatter, width="stretch")
+    
+    # ============================================================
+    # EVOLUÇÃO TEMPORAL E COMPARAÇÃO
+    # ============================================================
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+    
+    col_hist, col_comp = st.columns([1.2, 0.8])
+    
+    with col_hist:
+        st.markdown("#### 🕒 Evolução de Preço Médio (Total)")
+        # Process temporal data
+        df_temporal = df_raw.copy()
+        df_temporal['Data'] = pd.to_datetime(df_temporal['Data e Hora da Extração']).dt.date
+        hist_data = df_temporal.groupby('Data')['Preço'].mean().reset_index()
+        
+        if len(hist_data) > 1:
+            fig_line = px.line(
+                hist_data, x='Data', y='Preço',
+                color_discrete_sequence=['#FF6B35'],
+                markers=True,
+                labels={'Preço': 'Preço Médio (R$)', 'Data': ''}
+            )
+            fig_line.update_layout(**get_chart_layout(), showlegend=False)
+            fig_line.update_xaxes(gridcolor=GRID_COLOR)
+            fig_line.update_yaxes(gridcolor=GRID_COLOR, tickformat=',.0f')
+            st.plotly_chart(fig_line, use_container_width=True)
+        else:
+            st.info("ℹ️ Dados históricos insuficientes para gerar o gráfico de evolução.")
+
+    with col_comp:
+        st.markdown("#### ⚖️ Comparar Bairros")
+        target_bairros = st.multiselect(
+            "Selecione para comparar:",
+            options=sorted(df[COL_BAIRRO].unique()),
+            default=sorted(filtered[COL_BAIRRO].unique())[:2] if not filtered.empty else [],
+            max_selections=4,
+            key="comp_bairros"
+        )
+        
+        if target_bairros:
+            comp_df = df_latest[df_latest[COL_BAIRRO].isin(target_bairros)]
+            comp_stats = comp_df.groupby(COL_BAIRRO).agg({
+                'Preço': 'mean',
+                'Preço/m²': 'mean',
+                'Área (m²)': 'mean'
+            }).reset_index()
+            
+            # Show a small comparison table or bar chart
+            fig_comp = px.bar(
+                comp_stats, x=COL_BAIRRO, y='Preço/m²',
+                color=COL_BAIRRO,
+                color_discrete_sequence=['#FF6B35', '#FF9F1C', '#FFD166', '#06D6A0'],
+                labels={'Preço/m²': 'R$/m²', COL_BAIRRO: ''}
+            )
+            fig_comp.update_layout(**get_chart_layout(), showlegend=False)
+            fig_comp.update_yaxes(gridcolor=GRID_COLOR)
+            st.plotly_chart(fig_comp, use_container_width=True)
+        else:
+            st.write("Selecione bairros para visualizar a comparação de R$/m².")
     
     st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
     
@@ -526,10 +366,6 @@ with tab1:
     
     # Calcular IBairro (Índice de Preço do Bairro)
     bairro_avg_pm2 = df_raw.groupby(COL_BAIRRO)['Preço/m²'].mean()
-    filtered['IBairro'] = filtered[COL_BAIRRO].apply(
-        lambda b: filtered[filtered[COL_BAIRRO] == b]['Preço/m²'].values[0] / bairro_avg_pm2.get(b, 1) 
-        if b in bairro_avg_pm2.index and len(filtered[filtered[COL_BAIRRO] == b]) > 0 else 0
-    )
     filtered['IBairro'] = filtered.apply(
         lambda row: row['Preço/m²'] / bairro_avg_pm2.get(row[COL_BAIRRO], 1) if bairro_avg_pm2.get(row[COL_BAIRRO], 0) > 0 else 0,
         axis=1
@@ -552,16 +388,7 @@ with tab1:
         'Data e Hora da Extração': 'Captura'
     })
     
-    # Formatação estilo brasileiro (Pontos para milhar)
-    def brl_fmt(x):
-        try:
-            return f"R$ {int(x):,}".replace(",", ".")
-        except:
-            return str(x)
-    
-    # Para grandes datasets (>1000 linhas), usar formatação simples
-    # Para pequenos datasets, usar Styler com formatação avançada
-    # Configuração de colunas para garantir ordenação numérica (sem format string que força vírgula)
+    # Configuração de colunas para garantir ordenação numérica
     column_config = {
         "Link": st.column_config.LinkColumn("🔗 Link", display_text="Abrir"),
         "Captura": st.column_config.TextColumn("📅 Captura"),
@@ -574,28 +401,14 @@ with tab1:
         "IBairro": st.column_config.NumberColumn("IBairro"),
     }
 
-    # Formatadores BR (ponto para milhar)
-    def fmt_br_val(x): 
-        try: return f"R$ {int(x):,}".replace(",", ".")
-        except: return str(x)
-    
-    def fmt_br_pm2(x):
-        try: return f"R$ {float(x):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        except: return str(x)
-        
-    def fmt_br_area(x):
-        try: return f"{int(x):,}".replace(",", ".") + " m²"
-        except: return str(x)
-
     def highlight_ibairro(val):
         if pd.isna(val) or val == 0: return ''
         return 'background-color: rgba(6, 214, 160, 0.3); color: #06D6A0' if val < 1 else 'background-color: rgba(255, 107, 53, 0.3); color: #FF6B35'
 
-    # SEMPRE usar Styler para garantir a formatação visual (milhar com ponto)
-    # Streamlit dataframe preserva ordenação numérica se o DF original for numérico, mesmo com Styler
+    # FORMATAÇÃO: Streamlit dataframe preserva ordenação numérica se o DF original for numérico
     styler = display_df.style.format({
-        "Preço (R$)": fmt_br_val,
-        "Condomínio (R$)": fmt_br_val,
+        "Preço (R$)": fmt_br_currency,
+        "Condomínio (R$)": fmt_br_currency,
         "Preço/m² (R$)": fmt_br_pm2,
         "Área (m²)": fmt_br_area,
         "IBairro": "{:.2f}"

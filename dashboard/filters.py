@@ -31,23 +31,19 @@ def update_area_inputs():
 
 def reset_filters(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos):
     """Reseta todos os filtros para os valores originais."""
-    st.session_state.update({
-        "show_all": False,
-        "cidade_search": "",
-        "sel_cidades": default_cidades,
-        "bairro_search": "",
-        "sel_bairros": default_bairros,
-        "sel_tipos": default_tipos,
-        "price_input_min": default_price_min,
-        "price_input_max": default_price_max,
-        "sel_price": (default_price_min, default_price_max),
-        "area_input_min": default_area_min,
-        "area_input_max": default_area_max,
-        "sel_area": (default_area_min, default_area_max),
-        "sel_quartos": default_quartos,
-        "search_id": "",
-        "search_bairro": "",
-        "search_tipo": "",
-        "search_endereco": ""
-    })
-    st.rerun()
+    st.session_state["show_all"] = False
+    st.session_state["sel_cidades"] = default_cidades
+    st.session_state["bairro_search"] = ""
+    st.session_state["sel_bairros"] = default_bairros
+    st.session_state["sel_tipos"] = default_tipos
+    st.session_state["price_input_min"] = default_price_min
+    st.session_state["price_input_max"] = default_price_max
+    st.session_state["sel_price"] = (default_price_min, default_price_max)
+    st.session_state["area_input_min"] = default_area_min
+    st.session_state["area_input_max"] = default_area_max
+    st.session_state["sel_area"] = (default_area_min, default_area_max)
+    st.session_state["sel_quartos"] = default_quartos
+    st.session_state["search_id"] = ""
+    st.session_state["search_bairro"] = ""
+    st.session_state["search_tipo"] = ""
+    st.session_state["search_endereco"] = ""

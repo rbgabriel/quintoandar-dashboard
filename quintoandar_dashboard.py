@@ -115,8 +115,13 @@ with st.sidebar:
     
     col_reset_top = st.columns(1)[0]
     with col_reset_top:
-        if st.button("🔁 Reset Filtros", use_container_width=True, key="reset_top"):
-            reset_filters(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
+        st.button(
+            "🔁 Reset Filtros", 
+            use_container_width=True, 
+            key="reset_top",
+            on_click=reset_filters,
+            args=(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
+        )
     
     st.markdown("---")
     
@@ -181,8 +186,8 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-    if st.button("🗑️ Limpar Filtros", use_container_width=True):
-        reset_filters(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)
+    if st.button("🗑️ Limpar Filtros", use_container_width=True, on_click=reset_filters, args=(default_cidades, default_bairros, default_tipos, default_price_min, default_price_max, default_area_min, default_area_max, default_quartos)):
+        pass
 
 # ============================================================
 # APLICAR FILTROS

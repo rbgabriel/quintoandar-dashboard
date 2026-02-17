@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st # Reloaded to fix import cache
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -73,7 +73,10 @@ COL_CIDADE = 'Cidade' if 'Cidade' in df_raw.columns else 'Cidade de Busca'
 # VISÃO: ÚLTIMA CAPTURA vs TODOS OS REGISTROS
 # ============================================================
 # Por padrão, exibir apenas o registro mais recente de cada imóvel
-df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subset=['ID Imóvel'], keep='last')
+if 'Data e Hora da Extração' in df_raw.columns:
+    df_latest = df_raw.sort_values('Data e Hora da Extração').drop_duplicates(subset=['ID Imóvel'], keep='last').copy()
+else:
+    df_latest = df_raw.drop_duplicates(subset=['ID Imóvel'], keep='last').copy()
 
 # Calculate defaults for filters
 df_default = df_latest

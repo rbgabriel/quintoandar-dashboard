@@ -106,7 +106,7 @@ def criar_mapa_calor(df: pd.DataFrame):
 
 
 def criar_tabela_bairros(df: pd.DataFrame):
-    """Retorna DataFrame com estatísticas agregadas por bairro."""
+    """Retorna DataFrame com estatísticas agregadas por bairro (valores numéricos)."""
     if df.empty:
         return None
 
@@ -120,7 +120,6 @@ def criar_tabela_bairros(df: pd.DataFrame):
                 "Preço Médio": ("Preço", "mean"),
                 "Preço/m² Médio": ("Preço/m²", "mean"),
                 "Área Média": ("Área (m²)", "mean"),
-                "Última Atualização": ("Data e Hora da Extração", "max"),
             },
         )
         .round(2)
@@ -129,3 +128,36 @@ def criar_tabela_bairros(df: pd.DataFrame):
     )
 
     return stats
+
+
+def criar_tabela_ruas(df: pd.DataFrame):
+    """Retorna DataFrame com estatísticas agregadas por rua."""
+    if df.empty:
+        return None
+
+    # Tenta extrair o nome da rua (tudo antes da primeira vírgula ou hífen no endereço)
+    def extrair_rua(addr):
+        if not isinstance(addr, str): return "N/A"
+        # Remove números e complementos comuns da rua para agrupar melhor
+        rua = addr.split(',')[0].split(' - ')[0].strip()
+        return rua
+
+    df_ruas = df.copy()
+    df_ruas['Rua'] = df_ruas['Endereço'].apply(extrair_rua)
+
+    stats = (
+        df_ruas.groupby("Rua")
+        .agg(
+            Imóveis=("ID Imóvel", "nunique"),
+            **{
+                "Preço Médio": ("Preço", "mean"),
+                "Preço/m² Médio": ("Preço/m²", "mean"),
+                "Área Média": ("Área (m²)", "mean"),
+            },
+        )
+        .round(2)
+        .reset_index()
+        .sort_values("Imóveis", ascending=False)
+    )
+
+    return stats.head(20) # Retorna as top 20 ruas

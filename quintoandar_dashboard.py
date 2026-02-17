@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
-from mapa_calor import criar_mapa_calor, criar_tabela_bairros
+from mapa_calor import criar_mapa_calor, criar_tabela_bairros, criar_tabela_ruas
 
 # New modules
 from utils.formatting import format_brl, fmt_br_currency, fmt_br_pm2, fmt_br_area
@@ -465,19 +465,46 @@ with tab2:
         if fig_mapa:
             st.plotly_chart(fig_mapa, use_container_width=True)
             
+            # --- Tabela de Bairros (Ordenação Numérica) ---
             st.markdown("---")
             st.markdown("#### 📊 Estatísticas por Bairro")
             tabela_bairros = criar_tabela_bairros(mapa_filtered)
             if tabela_bairros is not None:
-                tabela_display = tabela_bairros.copy()
-                tabela_display['Preço Min'] = tabela_display['Preço Min'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
-                tabela_display['Preço Max'] = tabela_display['Preço Max'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
-                tabela_display['Preço Médio'] = tabela_display['Preço Médio'].apply(lambda x: f"R$ {int(x):,}".replace(",", "."))
-                tabela_display['Preço/m² Médio'] = tabela_display['Preço/m² Médio'].apply(lambda x: f"R$ {int(x):,.0f}".replace(",", "."))
-                tabela_display['Área Média'] = tabela_display['Área Média'].apply(lambda x: f"{int(x):,} m²".replace(",", "."))
-                tabela_display = tabela_display.rename(columns={'Imóveis': '🏠 Imóveis'})
-                
-                st.dataframe(tabela_display, use_container_width=True, hide_index=True)
+                st.dataframe(
+                    tabela_bairros.style.format({
+                        "Preço Min": fmt_br_currency,
+                        "Preço Max": fmt_br_currency,
+                        "Preço Médio": fmt_br_currency,
+                        "Preço/m² Médio": fmt_br_pm2,
+                        "Área Média": fmt_br_area,
+                    }),
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Imóveis": st.column_config.NumberColumn("🏠 Imóveis"),
+                        "Preço Médio": st.column_config.NumberColumn("Preço Médio"),
+                    }
+                )
+            
+            # --- Tabela de Ruas (NOVO) ---
+            st.markdown("---")
+            st.markdown("#### 🛣️ Top Ruas com mais imóveis (nesta seleção)")
+            tabela_ruas = criar_tabela_ruas(mapa_filtered)
+            if tabela_ruas is not None:
+                st.dataframe(
+                    tabela_ruas.style.format({
+                        "Preço Médio": fmt_br_currency,
+                        "Preço/m² Médio": fmt_br_pm2,
+                        "Área Média": fmt_br_area,
+                    }),
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Imóveis": st.column_config.NumberColumn("🏠 Imóveis"),
+                    }
+                )
+            else:
+                st.info("ℹ️ Dados de endereço insuficientes para análise por rua.")
     else:
         st.warning("❌ Nenhum dado disponível com os filtros selecionados")
 
